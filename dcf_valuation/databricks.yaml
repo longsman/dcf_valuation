@@ -11,7 +11,8 @@ artifacts:
     path: .
 
 include:
-  - resources/*.yaml
+  - resources/dcf_valuation_dev.job.yaml
+  # Note: dcf_valuation.job.yaml excluded - add it when deploying to prd
 
 variables:
   environments:
@@ -33,10 +34,6 @@ targets:
     default: true
     workspace:
       host: https://dbc-51f1a5f2-687a.cloud.databricks.com
-    # DEV uses dcf_valuation_dev (gold-only), disable full PRD job
-    resources:
-      jobs:
-        dcf_valuation: null
 
   prd:
     mode: production
@@ -48,7 +45,3 @@ targets:
         level: CAN_MANAGE
     run_as:
       user_name: lee.nathan.sh@outlook.com
-    # PRD uses dcf_valuation (full job), disable dev-only job
-    resources:
-      jobs:
-        dcf_valuation_dev: null
