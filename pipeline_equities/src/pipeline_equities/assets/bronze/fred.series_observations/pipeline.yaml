@@ -1,0 +1,19 @@
+config:
+  mode: streaming
+  streaming_trigger_mode:
+    available_now: True
+  checkpoint_path: s3://datsando-prod/pipeline_equities/checkpoints/bronze/fred/series_observations
+
+producer:
+  variant: FREDSeriesObservations
+  parameters:
+    series_id: DGS10
+    api_key_secret:
+      scope: pipeline_equities
+      key: fred.api_key
+
+consumer:
+  variant: SaveAsTable
+  parameters:
+    mode: 'append'
+    table: bronze.fred.series_observations

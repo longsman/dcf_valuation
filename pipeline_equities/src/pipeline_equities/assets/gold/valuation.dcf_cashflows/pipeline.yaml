@@ -1,0 +1,155 @@
+# gold.valuation.dcf_cashflows
+# Generates year-by-year DCF projections from dcf_inputs
+
+config:
+  mode: batch
+
+producer:
+  variant: ExecSQL
+  parameters:
+    sql_query: |
+      with inputs as (
+        select *
+        from gold.valuation.dcf_inputs
+        where has_minimum_inputs = true
+      ),
+      years as (
+        select explode(sequence(1, 11)) as year
+      ),
+      projections as (
+        select
+          i.cik,
+          i.valuation_date,
+          i.assumption_set_id,
+          i.source_accn,
+          i.model_type,
+          y.year,
+          y.year = 11 as is_terminal,
+          -- Linear fade: g_year = g0 + (g_terminal - g0) * (year / 10)
+          case 
+            when y.year <= 10 then 
+              i.growth_initial + (i.g_terminal - i.growth_initial) * (y.year / 10.0)
+            else i.g_terminal
+          end as g_year,
+          i.operating_margin as margin_year,
+          -- ROIC/ROE fade to discount rate
+          case 
+            when i.model_type = 'corporate' then
+              case 
+                when y.year <= 10 then 
+                  coalesce(
+                    -- ROIC proxy from base data
+                    case when i.revenue_ttm > 0 then i.nopat_ttm / (i.book_equity_latest + i.debt_lt_latest + i.debt_st_latest - i.cash_latest) end,
+                    i.wacc * 1.5
+                  ) + (i.wacc - coalesce(
+                    case when i.revenue_ttm > 0 then i.nopat_ttm / (i.book_equity_latest + i.debt_lt_latest + i.debt_st_latest - i.cash_latest) end,
+                    i.wacc * 1.5
+                  )) * (y.year / 10.0)
+                else i.wacc
+              end
+            else
+              case 
+                when y.year <= 10 then 
+                  i.roe_proxy + (i.cost_of_equity - i.roe_proxy) * (y.year / 10.0)
+                else i.cost_of_equity
+              end
+          end as roic_or_roe_year,
+          i.revenue_ttm,
+          i.ebit_ttm,
+          i.nopat_ttm,
+          i.net_income_ttm,
+          i.operating_margin,
+          i.wacc,
+          i.cost_of_equity,
+          i.g_terminal,
+          i.growth_initial,
+          i.tax_rate_effective,
+          i.tax_rate_marginal
+        from inputs i
+        cross join years y
+      ),
+      -- Calculate year-by-year values
+      with_calcs as (
+        select
+          p.*,
+          -- Revenue projection (corporate only)
+          case 
+            when p.model_type = 'corporate' then
+              p.revenue_ttm * pow(1 + p.growth_initial + (p.g_terminal - p.growth_initial) * (least(p.year, 10) / 10.0) / 2.0, p.year)
+          end as revenue,
+          -- Tax rate fade
+          p.tax_rate_effective + (p.tax_rate_marginal - p.tax_rate_effective) * (least(p.year, 10) / 10.0) as tax_year
+        from projections p
+      ),
+      with_ebit as (
+        select
+          wc.*,
+          case when wc.model_type = 'corporate' then wc.revenue * wc.margin_year end as ebit
+        from with_calcs wc
+      ),
+      with_nopat as (
+        select
+          we.*,
+          case 
+            when we.model_type = 'corporate' then we.ebit * (1 - we.tax_year)
+            else we.net_income_ttm * pow(1 + we.g_year, we.year)
+          end as nopat_or_net_income
+        from with_ebit we
+      ),
+      with_reinvestment as (
+        select
+          wn.*,
+          -- Reinvestment = g / ROIC (or ROE) * NOPAT (or NI)
+          case 
+            when wn.roic_or_roe_year > 0 then
+              (wn.g_year / wn.roic_or_roe_year) * wn.nopat_or_net_income
+            else 0
+          end as reinvestment
+        from with_nopat wn
+      ),
+      with_fcf as (
+        select
+          wr.*,
+          wr.nopat_or_net_income - wr.reinvestment as fcf,
+          case when wr.model_type = 'corporate' then wr.wacc else wr.cost_of_equity end as discount_rate
+        from with_reinvestment wr
+      ),
+      with_pv as (
+        select
+          wf.*,
+          1 / pow(1 + wf.discount_rate, wf.year) as discount_factor,
+          case 
+            when wf.is_terminal then
+              -- Terminal value
+              (wf.fcf / (wf.discount_rate - wf.g_terminal)) / pow(1 + wf.discount_rate, wf.year - 1)
+            else
+              wf.fcf / pow(1 + wf.discount_rate, wf.year)
+          end as pv
+        from with_fcf wf
+      )
+      select
+        cik,
+        valuation_date,
+        assumption_set_id,
+        source_accn,
+        model_type,
+        year,
+        is_terminal,
+        g_year,
+        margin_year,
+        roic_or_roe_year,
+        revenue,
+        ebit,
+        nopat_or_net_income,
+        reinvestment,
+        fcf,
+        discount_rate,
+        discount_factor,
+        pv
+      from with_pv
+
+consumer:
+  variant: MergeTable
+  parameters:
+    table: gold.valuation.dcf_cashflows
+    key_columns: [cik, valuation_date, assumption_set_id, source_accn, model_type, year]

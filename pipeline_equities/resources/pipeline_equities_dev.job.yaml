@@ -1,0 +1,230 @@
+# DEV-only job definition: gold layer tasks only
+# Bronze/silver tasks removed - reads from tables populated by PRD job (542379385267532)
+# This job runs 40 min after PRD schedule to ensure fresh silver data
+
+task_defaults: &task_defaults
+  environment_key: default
+  disable_auto_optimization: true
+
+python_wheel_task_defaults: &python_wheel_task_defaults
+  package_name: superwind
+  entry_point: exec_superwind
+
+resources:
+  jobs:
+    pipeline_equities_dev:
+      name: pipeline_equities_dev
+
+      schedule:
+        # 40 min after PRD schedule (0 0 9-21/3) to ensure fresh silver data
+        quartz_cron_expression: 0 40 9-21/3 ? * MON-FRI
+        timezone_id: America/New_York
+
+      email_notifications:
+        on_failure:
+          - la.long.n@outlook.com
+
+      environments: ${var.environments}
+      performance_target: PERFORMANCE_OPTIMIZED
+
+      tasks:
+        # ===========================================
+        # Gold layer: Damodaran reference data (seed tables)
+        # ===========================================
+        - <<: *task_defaults
+          task_key: gold-damodaran-implied_erp
+          python_wheel_task:
+            <<: *python_wheel_task_defaults
+            named_parameters:
+              from_package: ${var.from_package}
+              yaml_file: gold/damodaran.implied_erp/pipeline.yaml
+
+        - <<: *task_defaults
+          task_key: gold-damodaran-industry_betas
+          python_wheel_task:
+            <<: *python_wheel_task_defaults
+            named_parameters:
+              from_package: ${var.from_package}
+              yaml_file: gold/damodaran.industry_betas/pipeline.yaml
+
+        - <<: *task_defaults
+          task_key: gold-damodaran-ratings_spreads
+          python_wheel_task:
+            <<: *python_wheel_task_defaults
+            named_parameters:
+              from_package: ${var.from_package}
+              yaml_file: gold/damodaran.ratings_spreads/pipeline.yaml
+
+        - <<: *task_defaults
+          task_key: gold-damodaran-synthetic_rating_bands
+          python_wheel_task:
+            <<: *python_wheel_task_defaults
+            named_parameters:
+              from_package: ${var.from_package}
+              yaml_file: gold/damodaran.synthetic_rating_bands/pipeline.yaml
+
+        # ===========================================
+        # Gold layer: Dimension tables
+        # ===========================================
+        - <<: *task_defaults
+          task_key: gold-dim-sic_to_damodaran_industry
+          python_wheel_task:
+            <<: *python_wheel_task_defaults
+            named_parameters:
+              from_package: ${var.from_package}
+              yaml_file: gold/dim.sic_to_damodaran_industry/pipeline.yaml
+
+        - <<: *task_defaults
+          task_key: gold-dim-company
+          # No depends_on: reads from silver tables directly (populated by PRD)
+          python_wheel_task:
+            <<: *python_wheel_task_defaults
+            named_parameters:
+              from_package: ${var.from_package}
+              yaml_file: gold/dim.company/pipeline.yaml
+
+        - <<: *task_defaults
+          task_key: gold-dim-cik_ticker
+          # No depends_on: reads from silver tables directly (populated by PRD)
+          python_wheel_task:
+            <<: *python_wheel_task_defaults
+            named_parameters:
+              from_package: ${var.from_package}
+              yaml_file: gold/dim.cik_ticker/pipeline.yaml
+
+        # ===========================================
+        # Gold layer: Financials tag map and events
+        # ===========================================
+        - <<: *task_defaults
+          task_key: gold-financials-tag_map
+          python_wheel_task:
+            <<: *python_wheel_task_defaults
+            named_parameters:
+              from_package: ${var.from_package}
+              yaml_file: gold/financials.tag_map/pipeline.yaml
+
+        - <<: *task_defaults
+          task_key: gold-edgar-filing_events
+          # No depends_on: reads from silver tables directly (populated by PRD)
+          python_wheel_task:
+            <<: *python_wheel_task_defaults
+            named_parameters:
+              from_package: ${var.from_package}
+              yaml_file: gold/edgar.filing_events/pipeline.yaml
+
+        - <<: *task_defaults
+          task_key: gold-market-prices_daily
+          # No depends_on: reads from silver tables directly (populated by PRD)
+          python_wheel_task:
+            <<: *python_wheel_task_defaults
+            named_parameters:
+              from_package: ${var.from_package}
+              yaml_file: gold/market.prices_daily/pipeline.yaml
+
+        # ===========================================
+        # Gold layer: Financial normalization
+        # ===========================================
+        - <<: *task_defaults
+          task_key: gold-financials-statement_lines
+          depends_on:
+            # Removed: silver-edgar-company_facts (reads table directly from PRD)
+            - task_key: gold-financials-tag_map
+          python_wheel_task:
+            <<: *python_wheel_task_defaults
+            named_parameters:
+              from_package: ${var.from_package}
+              yaml_file: gold/financials.statement_lines/pipeline.yaml
+
+        - <<: *task_defaults
+          task_key: gold-financials-flow_quarterly
+          depends_on:
+            - task_key: gold-financials-statement_lines
+            - task_key: gold-financials-tag_map
+          python_wheel_task:
+            <<: *python_wheel_task_defaults
+            named_parameters:
+              from_package: ${var.from_package}
+              yaml_file: gold/financials.flow_quarterly/pipeline.yaml
+
+        - <<: *task_defaults
+          task_key: gold-financials-flow_ttm
+          depends_on:
+            - task_key: gold-financials-flow_quarterly
+          python_wheel_task:
+            <<: *python_wheel_task_defaults
+            named_parameters:
+              from_package: ${var.from_package}
+              yaml_file: gold/financials.flow_ttm/pipeline.yaml
+
+        - <<: *task_defaults
+          task_key: gold-financials-balance_quarterly
+          depends_on:
+            - task_key: gold-financials-statement_lines
+            - task_key: gold-financials-tag_map
+          python_wheel_task:
+            <<: *python_wheel_task_defaults
+            named_parameters:
+              from_package: ${var.from_package}
+              yaml_file: gold/financials.balance_quarterly/pipeline.yaml
+
+        - <<: *task_defaults
+          task_key: gold-financials-working_capital
+          depends_on:
+            - task_key: gold-financials-balance_quarterly
+          python_wheel_task:
+            <<: *python_wheel_task_defaults
+            named_parameters:
+              from_package: ${var.from_package}
+              yaml_file: gold/financials.working_capital/pipeline.yaml
+
+        # ===========================================
+        # Gold layer: Valuation
+        # ===========================================
+        - <<: *task_defaults
+          task_key: gold-valuation-assumption_sets
+          python_wheel_task:
+            <<: *python_wheel_task_defaults
+            named_parameters:
+              from_package: ${var.from_package}
+              yaml_file: gold/valuation.assumption_sets/pipeline.yaml
+
+        - <<: *task_defaults
+          task_key: gold-valuation-dcf_inputs
+          depends_on:
+            - task_key: gold-edgar-filing_events
+            - task_key: gold-dim-company
+            - task_key: gold-dim-sic_to_damodaran_industry
+            - task_key: gold-financials-flow_ttm
+            - task_key: gold-financials-balance_quarterly
+            - task_key: gold-financials-working_capital
+            - task_key: gold-damodaran-implied_erp
+            - task_key: gold-damodaran-industry_betas
+            - task_key: gold-damodaran-ratings_spreads
+            - task_key: gold-damodaran-synthetic_rating_bands
+            # Removed: silver-fred-market_yield_10yr (reads table directly from PRD)
+          python_wheel_task:
+            <<: *python_wheel_task_defaults
+            named_parameters:
+              from_package: ${var.from_package}
+              yaml_file: gold/valuation.dcf_inputs/pipeline.yaml
+
+        - <<: *task_defaults
+          task_key: gold-valuation-dcf_cashflows
+          depends_on:
+            - task_key: gold-valuation-dcf_inputs
+          python_wheel_task:
+            <<: *python_wheel_task_defaults
+            named_parameters:
+              from_package: ${var.from_package}
+              yaml_file: gold/valuation.dcf_cashflows/pipeline.yaml
+
+        - <<: *task_defaults
+          task_key: gold-valuation-dcf_results
+          depends_on:
+            - task_key: gold-valuation-dcf_cashflows
+            - task_key: gold-valuation-dcf_inputs
+          python_wheel_task:
+            <<: *python_wheel_task_defaults
+            named_parameters:
+              from_package: ${var.from_package}
+              yaml_file: gold/valuation.dcf_results/pipeline.yaml

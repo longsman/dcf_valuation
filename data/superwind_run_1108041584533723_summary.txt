@@ -1,0 +1,14 @@
+job_id=413747026668475 run_id=1108041584533723 run_name=superwind
+state=INTERNAL_ERROR result=FAILED
+start=1762869604111 end=1762869981780 duration_ms=377669
+url=https://dbc-51f1a5f2-687a.cloud.databricks.com/?o=683875129393773#job/413747026668475/run/1108041584533723
+tasks:
+- bronze-fred-series_observations: run_id=627896754767809 state=TERMINATED result=SUCCESS
+- metrics-fred: run_id=604347827457075 state=TERMINATED result=SUCCESS
+- bronze-edgar-filings_rss: run_id=834012612363292 state=TERMINATED result=SUCCESS
+- silver-edgar-filings_rss: run_id=408131127482491 state=TERMINATED result=SUCCESS
+- bronze-edgar-company_facts: run_id=485656648584676 state=TERMINATED result=SUCCESS
+- silver-edgar-company_facts: run_id=920945220815438 state=TERMINATED result=SUCCESS
+- bronze-polygon-snapshot_all_tickers: run_id=260683236539825 state=TERMINATED result=FAILED
+- metrics-edgar: run_id=391521241406470 state=TERMINATED result=SUCCESS
+- silver-polygon-snapshot_all_tickers: run_id=579988425647342 state=SKIPPED result=UPSTREAM_FAILED

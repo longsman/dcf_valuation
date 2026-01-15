@@ -1,0 +1,59 @@
+config:
+  mode: batch
+
+producer:
+  variant: RESTProducer
+  parameters:
+    url: https://www.sec.gov/cgi-bin/browse-edgar
+    method: GET
+    headers:
+      User-Agent: 'Datsando datsando@outlook.com'
+    params:
+      action: getcurrent
+      type: 10-
+      owner: include
+      start: 0
+      count: 500
+      output: atom
+
+operators:
+  - variant: WithColumns
+    parameters:
+      cols_map:
+        content: cast(content as string)
+
+  - variant: ParseRSSFeed
+    parameters:
+      source_col: content
+
+  - variant: Select
+    parameters:
+      cols:
+        - explode(content) as content
+
+  - variant: CastJSONString
+    parameters:
+      source_col: content
+      spark_schema: |
+        guidislink boolean,
+        id string,
+        link string,
+        links array<string>,
+        summary string,
+        summary_detail string,
+        tags array<string>,
+        title string,
+        title_detail string,
+        updated string,
+        updated_parsed array<bigint>
+
+  - variant: Select
+    parameters:
+      cols:
+        - content.*
+
+consumer:
+  variant: MergeTable
+  parameters:
+    key_columns: [id, title]
+    table: bronze.edgar.form10_filings_rss

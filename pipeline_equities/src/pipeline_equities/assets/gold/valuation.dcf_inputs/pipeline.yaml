@@ -1,0 +1,435 @@
+# gold.valuation.dcf_inputs
+# Assembles all DCF inputs from filing events, financials, and Damodaran parameters
+
+config:
+  mode: streaming
+  streaming_defer_operators: True
+  streaming_trigger_mode:
+    available_now: True
+  checkpoint_path: s3://datsando-prod/pipeline_equities/checkpoints/gold/valuation/dcf_inputs_v3
+
+producer:
+  variant: ReadTable
+  parameters:
+    table: gold.edgar.filing_events
+    options:
+      readChangeFeed: True
+      startingVersion: $ENV{CDF_STARTING_VERSION:11}
+
+operators:
+  - variant: Filter
+    parameters:
+      condition: _change_type in ('insert', 'update_postimage')
+
+  - variant: ExecSQL
+    parameters:
+      sql_query: |
+        with filing_base as (
+          select
+            fe._id,
+            fe.cik,
+            current_date() as valuation_date,
+            fe.accession_number as source_accn,
+            fe.filed_date as source_filed_date
+          from data fe
+        ),
+        -- Get latest period end from statement_lines for this cik
+        period_ends as (
+          select
+            fb.cik,
+            fb.source_accn,
+            max(sl.period_end) as as_of_period_end
+          from filing_base fb
+          left join gold.financials.statement_lines sl 
+            on fb.cik = sl.cik
+            and sl.accn = fb.source_accn
+          group by fb.cik, fb.source_accn
+        ),
+        -- Get company metadata
+        with_company as (
+          select
+            fb.*,
+            pe.as_of_period_end,
+            c.entity_name,
+            c.sic,
+            c.is_financial,
+            coalesce(sim.damodaran_industry, 'Total Market') as damodaran_industry,
+            case when sim.damodaran_industry is null then true else false end as industry_beta_fallback
+          from filing_base fb
+          left join period_ends pe on fb.cik = pe.cik and fb.source_accn = pe.source_accn
+          left join gold.dim.company c on fb.cik = c.cik
+          left join gold.dim.sic_to_damodaran_industry sim on c.sic = sim.sic
+        ),
+        -- Get TTM flows
+        with_ttm as (
+          select
+            wc.*,
+            rev.ttm_val as revenue_ttm,
+            ebit.ttm_val as ebit_ttm,
+            ptax.ttm_val as pretax_income_ttm,
+            tax.ttm_val as tax_expense_ttm,
+            ni.ttm_val as net_income_ttm,
+            da.ttm_val as da_ttm,
+            cap.ttm_val as capex_ttm,
+            ie.ttm_val as interest_expense_ttm
+          from with_company wc
+          left join gold.financials.flow_ttm rev 
+            on wc.cik = rev.cik and rev.line_item = 'revenue' and rev.as_of_period_end = wc.as_of_period_end
+          left join gold.financials.flow_ttm ebit 
+            on wc.cik = ebit.cik and ebit.line_item = 'ebit' and ebit.as_of_period_end = wc.as_of_period_end
+          left join gold.financials.flow_ttm ptax 
+            on wc.cik = ptax.cik and ptax.line_item = 'pretax_income' and ptax.as_of_period_end = wc.as_of_period_end
+          left join gold.financials.flow_ttm tax 
+            on wc.cik = tax.cik and tax.line_item = 'tax_expense' and tax.as_of_period_end = wc.as_of_period_end
+          left join gold.financials.flow_ttm ni 
+            on wc.cik = ni.cik and ni.line_item = 'net_income' and ni.as_of_period_end = wc.as_of_period_end
+          left join gold.financials.flow_ttm da 
+            on wc.cik = da.cik and da.line_item = 'da' and da.as_of_period_end = wc.as_of_period_end
+          left join gold.financials.flow_ttm cap 
+            on wc.cik = cap.cik and cap.line_item = 'capex' and cap.as_of_period_end = wc.as_of_period_end
+          left join gold.financials.flow_ttm ie 
+            on wc.cik = ie.cik and ie.line_item = 'interest_expense' and ie.as_of_period_end = wc.as_of_period_end
+        ),
+        -- Get latest balances
+        with_balances as (
+          select
+            wt.*,
+            cash.val as cash_latest,
+            dst.val as debt_st_latest,
+            dlt.val as debt_lt_latest,
+            beq.val as book_equity_latest
+          from with_ttm wt
+          left join gold.financials.balance_quarterly cash 
+            on wt.cik = cash.cik and cash.line_item = 'cash' and cash.period_end = wt.as_of_period_end
+          left join gold.financials.balance_quarterly dst 
+            on wt.cik = dst.cik and dst.line_item = 'debt_st' and dst.period_end = wt.as_of_period_end
+          left join gold.financials.balance_quarterly dlt 
+            on wt.cik = dlt.cik and dlt.line_item = 'debt_lt' and dlt.period_end = wt.as_of_period_end
+          left join gold.financials.balance_quarterly beq 
+            on wt.cik = beq.cik and beq.line_item = 'book_equity' and beq.period_end = wt.as_of_period_end
+        ),
+        -- Get working capital change
+        with_wc as (
+          select
+            wb.*,
+            wc.non_cash_working_capital_yoy_change,
+            wc.non_cash_working_capital_yoy_change is not null as wc_change_available
+          from with_balances wb
+          left join gold.financials.working_capital wc 
+            on wb.cik = wc.cik and wc.as_of_period_end = wb.as_of_period_end
+        ),
+        -- TODO 1: Get market price via ticker mapping
+        with_market_price as (
+          select
+            wwc.*,
+            ct.ticker as ticker_primary_lookup,
+            mp.price_date as market_price_date_lookup,
+            mp.close as market_price_lookup,
+            case 
+              when mp.close is not null then 'ticker_lookup'
+              else null
+            end as market_price_method_lookup
+          from with_wc wwc
+          left join (
+            -- Handle duplicate is_primary entries by picking first alphabetically
+            select cik, ticker,
+              row_number() over (partition by cik order by ticker) as rn
+            from gold.dim.cik_ticker 
+            where is_primary = true
+          ) ct on wwc.cik = ct.cik and ct.rn = 1
+          left join (
+            select ticker, price_date, close,
+              row_number() over (partition by ticker order by price_date desc) as rn
+            from gold.market.prices_daily
+            where price_date >= current_date() - interval 7 days
+          ) mp on ct.ticker = mp.ticker and mp.rn = 1
+        ),
+        -- TODO 2: Get latest shares outstanding (with date boundary)
+        with_shares as (
+          select
+            wmp.*,
+            sh.val as shares_basic_latest_lookup
+          from with_market_price wmp
+          left join (
+            select cf.cik, cf.val, cf.end as shares_date,
+              row_number() over (
+                partition by cf.cik 
+                order by cf.end desc, tm.priority asc
+              ) as rn
+            from silver.edgar.company_facts cf
+            inner join gold.financials.tag_map tm
+              on cf.taxonomy = tm.source_taxonomy
+              and cf.tag = tm.source_tag
+            where tm.line_item = 'shares_basic'
+              and cf.unit_of_measure = 'shares'
+              and cf.val > 0
+          ) sh on wmp.cik = sh.cik 
+            and sh.rn = 1
+            and sh.shares_date <= wmp.as_of_period_end  -- Prevent look-ahead bias
+        ),
+        -- TODO 4: Calculate YoY revenue growth from company_facts (not flow_ttm)
+        with_growth as (
+          select
+            ws.*,
+            rev_growth.yoy_growth as revenue_yoy_growth,
+            case 
+              when rev_growth.yoy_growth is not null
+              then least(greatest(rev_growth.yoy_growth, -0.20), 0.50)  -- Bound [-20%, +50%]
+              else 0.05  -- Default fallback
+            end as growth_initial_calc,
+            case 
+              when rev_growth.yoy_growth is not null then 'revenue_yoy'
+              else 'default'
+            end as growth_method
+          from with_shares ws
+          left join (
+            -- Calculate YoY growth from annual revenue
+            select 
+              cik,
+              fy,
+              revenue,
+              prev_revenue,
+              (revenue - prev_revenue) / nullif(prev_revenue, 0) as yoy_growth
+            from (
+              select 
+                cik, fy, revenue,
+                lag(revenue) over (partition by cik order by fy) as prev_revenue
+              from (
+                select cf.cik, cf.fy, cf.val as revenue,
+                  row_number() over (partition by cf.cik, cf.fy order by cf.end desc, tm.priority asc) as rn
+                from silver.edgar.company_facts cf
+                inner join gold.financials.tag_map tm 
+                  on cf.taxonomy = tm.source_taxonomy and cf.tag = tm.source_tag
+                where tm.line_item = 'revenue'
+                  and cf.fp = 'FY'
+                  and cf.unit_of_measure = 'USD'
+                  and cf.val > 0
+              ) where rn = 1
+            )
+          ) rev_growth on ws.cik = rev_growth.cik 
+            and rev_growth.fy = year(ws.as_of_period_end)  -- Match fiscal year
+        ),
+        -- Get risk-free rate (most recent)
+        rf_rate as (
+          select
+            observation_date as rf_date,
+            percent / 100.0 as rf
+          from silver.fred.market_yield_10yr
+          where percent is not null
+          order by observation_date desc
+          limit 1
+        ),
+        -- Get ERP (most recent <= valuation_date)
+        erp_val as (
+          select
+            as_of_date as erp_as_of_date,
+            implied_erp as erp
+          from gold.damodaran.implied_erp
+          order by as_of_date desc
+          limit 1
+        ),
+        -- Get industry betas
+        with_params as (
+          select
+            wg.*,
+            rf.rf,
+            erp.erp,
+            erp.erp_as_of_date,
+            ib.unlevered_beta,
+            ib.d_e_ratio as target_de_ratio,
+            ib.as_of_year as industry_beta_as_of_year
+          from with_growth wg
+          cross join rf_rate rf
+          cross join erp_val erp
+          left join gold.damodaran.industry_betas ib 
+            on wg.damodaran_industry = ib.damodaran_industry
+            and ib.as_of_year = year(wg.valuation_date)
+        ),
+        -- Get spreads
+        spreads as (
+          select
+            as_of_date as spreads_as_of_date,
+            rating,
+            default_spread
+          from gold.damodaran.ratings_spreads
+          where as_of_date = (select max(as_of_date) from gold.damodaran.ratings_spreads)
+        ),
+        -- Compute derived values
+        with_derived as (
+          select
+            wp.*,
+            -- Tax rate effective
+            case 
+              when wp.pretax_income_ttm > 0 
+              then least(greatest(wp.tax_expense_ttm / wp.pretax_income_ttm, 0), 0.5)
+              else 0.25
+            end as tax_rate_effective,
+            0.25 as tax_rate_marginal,
+            -- Levered beta
+            wp.unlevered_beta * (1 + (1 - 0.25) * wp.target_de_ratio) as levered_beta,
+            -- Operating margin
+            case when wp.revenue_ttm > 0 then wp.ebit_ttm / wp.revenue_ttm else null end as operating_margin,
+            -- Interest coverage
+            case 
+              when wp.interest_expense_ttm > 0 then wp.ebit_ttm / wp.interest_expense_ttm 
+              else null 
+            end as interest_coverage
+          from with_params wp
+        ),
+        -- Get synthetic rating
+        with_rating as (
+          select
+            wd.*,
+            srb.rating as synthetic_rating
+          from with_derived wd
+          left join gold.damodaran.synthetic_rating_bands srb
+            on wd.interest_coverage > srb.min_interest_coverage
+            and wd.interest_coverage <= srb.max_interest_coverage
+        ),
+        -- Get default spread
+        with_spread as (
+          select
+            wr.*,
+            s.default_spread,
+            s.spreads_as_of_date
+          from with_rating wr
+          left join spreads s on wr.synthetic_rating = s.rating
+        ),
+        -- Final calculations
+        final as (
+          select
+            ws.*,
+            -- Cost of equity
+            ws.rf + ws.levered_beta * ws.erp as cost_of_equity,
+            -- Cost of debt
+            ws.rf + coalesce(ws.default_spread, 0) as cost_of_debt,
+            -- NOPAT
+            ws.ebit_ttm * (1 - ws.tax_rate_effective) as nopat_ttm,
+            -- Reinvestment base
+            coalesce(
+              (ws.capex_ttm - ws.da_ttm) + ws.non_cash_working_capital_yoy_change,
+              ws.capex_ttm - ws.da_ttm
+            ) as reinvestment_base,
+            -- WACC (using target weights)
+            (1 / (1 + ws.target_de_ratio)) * (ws.rf + ws.levered_beta * ws.erp) +
+            (ws.target_de_ratio / (1 + ws.target_de_ratio)) * (ws.rf + coalesce(ws.default_spread, 0)) * (1 - ws.tax_rate_marginal) as wacc,
+            -- ROE proxy (for financial track)
+            case 
+              when ws.book_equity_latest > 0 
+              then least(greatest(ws.net_income_ttm / ws.book_equity_latest, 0), 0.25)
+              else null
+            end as roe_proxy,
+            -- Terminal growth = rf (Damodaran v1)
+            ws.rf as g_terminal,
+            -- Initial growth (YoY revenue growth - simplified for v1)
+            growth_initial_calc as growth_initial  -- YoY revenue growth, bounded [-20%, +50%]
+          from with_spread ws
+        )
+        select
+          _id,
+          cik,
+          valuation_date,
+          'damodaran_v1' as assumption_set_id,
+          case when is_financial then 'financial' else 'corporate' end as model_type,
+          source_accn,
+          source_filed_date,
+          as_of_period_end,
+          entity_name,
+          sic,
+          is_financial,
+          damodaran_industry,
+          revenue_ttm,
+          ebit_ttm,
+          pretax_income_ttm,
+          tax_expense_ttm,
+          net_income_ttm,
+          da_ttm,
+          capex_ttm,
+          interest_expense_ttm,
+          cash_latest,
+          debt_st_latest,
+          debt_lt_latest,
+          book_equity_latest,
+          non_cash_working_capital_yoy_change,
+          wc_change_available,
+          ticker_primary_lookup as ticker_primary,
+          market_price_date_lookup as market_price_date,
+          cast(market_price_lookup as double) as market_price,
+          market_price_method_lookup as market_price_method,
+          shares_basic_latest_lookup as shares_basic_latest,
+          cast(market_price_lookup as double) * shares_basic_latest_lookup as market_cap,
+          rf,
+          erp,
+          erp_as_of_date,
+          unlevered_beta,
+          target_de_ratio,
+          industry_beta_as_of_year,
+          levered_beta,
+          cost_of_equity,
+          interest_coverage,
+          synthetic_rating,
+          default_spread,
+          spreads_as_of_date,
+          cost_of_debt,
+          tax_rate_effective,
+          tax_rate_marginal,
+          wacc,
+          operating_margin,
+          nopat_ttm,
+          reinvestment_base,
+          nopat_ttm - reinvestment_base as fcff_base,
+          roe_proxy,
+          growth_initial,
+          g_terminal,
+          -- has_minimum_inputs
+          case 
+            when not is_financial then
+              revenue_ttm is not null 
+              and ebit_ttm is not null 
+              and rf is not null 
+              and erp is not null 
+              and levered_beta is not null 
+              and growth_initial is not null
+            else
+              net_income_ttm is not null 
+              and book_equity_latest is not null 
+              and book_equity_latest > 0
+              and rf is not null 
+              and erp is not null 
+              and levered_beta is not null 
+              and growth_initial is not null
+          end as has_minimum_inputs,
+          -- missing_fields
+          array_compact(array(
+            case when revenue_ttm is null and not is_financial then 'revenue_ttm' end,
+            case when ebit_ttm is null and not is_financial then 'ebit_ttm' end,
+            case when net_income_ttm is null then 'net_income_ttm' end,
+            case when rf is null then 'rf' end,
+            case when erp is null then 'erp' end,
+            case when levered_beta is null then 'beta' end,
+            case when book_equity_latest is null and is_financial then 'book_equity' end
+          )) as missing_fields,
+          -- quality_flags
+          array_compact(array(
+            case when not wc_change_available then 'wc_change_unavailable' end,
+            case when industry_beta_fallback then 'industry_beta_fallback' end,
+            case when tax_rate_effective = 0.25 and pretax_income_ttm <= 0 then 'effective_tax_clamped' end,
+            case when roe_proxy is not null and (roe_proxy = 0 or roe_proxy = 0.25) then 'roe_clamped' end,
+            case when synthetic_rating is null and interest_expense_ttm is not null then 'synthetic_rating_fallback' end,
+            case when ticker_primary_lookup is null then 'no_ticker_mapping' end,
+            case when ticker_primary_lookup is not null and market_price_lookup is null then 'no_recent_price' end,
+            case when market_price_date_lookup < current_date() - interval 3 days then 'market_price_stale' end,
+            case when shares_basic_latest_lookup is null then 'shares_unavailable' end,
+            case when growth_method = 'default' then 'growth_default_used' end,
+            case when revenue_yoy_growth is not null and revenue_yoy_growth > 0.50 then 'growth_capped_high' end,
+            case when revenue_yoy_growth is not null and revenue_yoy_growth < -0.20 then 'growth_capped_low' end
+          )) as quality_flags,
+          true as options_omitted,
+          true as rsus_omitted
+        from final
+
+consumer:
+  variant: MergeTable
+  parameters:
+    table: gold.valuation.dcf_inputs
+    key_columns: [cik, valuation_date, assumption_set_id, source_accn, model_type]

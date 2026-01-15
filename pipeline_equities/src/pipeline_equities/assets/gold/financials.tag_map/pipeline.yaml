@@ -1,0 +1,52 @@
+# gold.financials.tag_map
+# Loads XBRL tag to line item mapping from seed CSV
+# CSV format uses pipe (|) as array delimiter
+
+config:
+  mode: batch
+
+producer:
+  variant: ReadCSV
+  parameters:
+    path: $ASSET_PATH{pipeline_equities.assets, gold/seed/financials/tag_map.csv}
+    options:
+      header: "true"
+      inferSchema: "false"
+
+operators:
+  - variant: WithColumns
+    parameters:
+      cols_map:
+        priority: cast(priority as int)
+        is_flow: cast(is_flow as boolean)
+        # Parse pipe-delimited unit_allowlist into array
+        unit_allowlist_array: |
+          case 
+            when unit_allowlist is null or trim(unit_allowlist) = '' then null 
+            else transform(split(unit_allowlist, '\\|'), x -> trim(x)) 
+          end
+        # Parse pipe-delimited duration_months_allowlist into int array
+        duration_months_allowlist_array: |
+          case 
+            when duration_months_allowlist is null or trim(duration_months_allowlist) = '' then null 
+            else transform(split(duration_months_allowlist, '\\|'), x -> try_cast(trim(x) as int)) 
+          end
+        loaded_at: current_timestamp()
+
+  - variant: Select
+    parameters:
+      cols:
+        - line_item
+        - source_taxonomy
+        - source_tag
+        - priority
+        - is_flow
+        - unit_allowlist_array as unit_allowlist
+        - duration_months_allowlist_array as duration_months_allowlist
+        - loaded_at
+
+consumer:
+  variant: MergeTable
+  parameters:
+    table: gold.financials.tag_map
+    key_columns: [line_item, source_taxonomy, source_tag]

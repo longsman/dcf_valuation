@@ -1,0 +1,141 @@
+config:
+  mode: streaming
+  streaming_defer_operators: True
+  streaming_trigger_mode:
+    available_now: True
+  checkpoint_path: s3://datsando-prod/pipeline_equities/checkpoints/silver/edgar/company_facts
+
+producer:
+  variant: ReadTable
+  parameters:
+    table: bronze.edgar.company_facts
+    options:
+      readChangeFeed: True
+      startingVersion: 2
+
+operators:
+  - variant: Filter
+    parameters:
+      condition: _change_type in ('insert', 'update_postimage')
+
+  - variant: DropColumns
+    parameters:
+      cols:
+        - _.*
+      except_cols:
+        - _id
+
+  - variant: WithColumns
+    parameters:
+      cols_map:
+        taxonomy: json_object_keys(get_json_object(content, '$.facts'))
+        tag: transform(taxonomy, x -> json_object_keys(get_json_object(content, '$.facts.'||x)))
+        taxonomy_tag_map: arrays_zip(taxonomy, tag)
+
+  - variant: Select
+    parameters:
+      cols:
+        - "* except(taxonomy, tag, taxonomy_tag_map)"
+        - explode(taxonomy_tag_map) as per_taxonomy
+
+  - variant: Select
+    parameters:
+      cols:
+        - "* except(per_taxonomy)"
+        - per_taxonomy.taxonomy
+        - explode(per_taxonomy.tag) as tag
+
+  - variant: WithColumns
+    parameters:
+      cols_map:
+        unit: json_object_keys(get_json_object(content, '$.facts.'||taxonomy||'.'||tag||'.units'))
+        data: transform(unit, x -> get_json_object(content, '$.facts.'||taxonomy||'.'||tag||'.units.'||x))
+        unit_data_map: arrays_zip(unit, data)
+
+  - variant: Select
+    parameters:
+      cols:
+        - "* except(unit, data, unit_data_map)"
+        - explode(unit_data_map) as per_unit
+
+  - variant: Select
+    parameters:
+      cols:
+        - _id
+        - cik
+        - get_json_object(content, '$.entityName') as entity_name
+        - taxonomy
+        - tag
+        - get_json_object(content, '$.facts.'||taxonomy||'.'||tag||'.label') as label
+        - get_json_object(content, '$.facts.'||taxonomy||'.'||tag||'.description') as description
+        - per_unit.unit as unit_of_measure
+        - per_unit.data
+        - accession_number
+
+  - variant: CastJSONString
+    parameters:
+      source_col: data
+      spark_schema: |
+        array<
+          struct<
+            start string,
+            end string,
+            val double,
+            accn string,
+            fy integer,
+            fp string,
+            form string,
+            filed string,
+            frame string
+          >
+        >
+
+  - variant: WithColumns
+    parameters:
+      cols_map:
+        data: explode(data)
+
+  - variant: Select
+    parameters:
+      cols:
+        - "* except(data)"
+        - data.*
+
+  - variant: KeepLatestRecord
+    parameters:
+      partition_by: 
+        - cik
+        - taxonomy
+        - tag
+        - unit_of_measure
+        - accn
+        - start
+        - end
+        - fy
+        - fp
+      order_by:
+        - accession_number desc
+
+  - variant: DropColumns
+    parameters:
+      cols:
+        - accession_number
+
+  - variant: StripStrings
+  - variant: ConvertStringToNull
+
+consumer:
+  variant: MergeTable
+  parameters:
+    table: silver.edgar.company_facts
+    #table: datsando.silver.company_facts
+    key_columns:
+      - cik
+      - taxonomy
+      - tag
+      - unit_of_measure
+      - accn
+      - start
+      - end
+      - fy
+      - fp

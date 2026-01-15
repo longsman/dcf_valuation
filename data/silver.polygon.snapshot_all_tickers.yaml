@@ -1,0 +1,102 @@
+config:
+  mode: streaming
+  streaming_trigger_mode:
+    available_now: True
+  checkpoint_path: s3://$ENV{DATSANDO_BUCKET_NAME}/checkpoints/silver/polygon/snapshot_all_tickers
+
+producer:
+  variant: ReadTable
+  parameters:
+    table: bronze.polygon.snapshot_all_tickers
+    options:
+      readChangeFeed: True
+      startingVersion: 0
+
+operators:
+  - variant: Filter
+    parameters:
+      condition: _change_type in ('insert', 'update_postimage')
+  # Unfortunately, built-in function for casting JSON to Struct has problems converting from String to Float.
+  # As a result, we'll just cast to a Struct of all String types, then handle individual conversions via
+  # direct cast in later operators.
+  - variant: CastJSONString
+    parameters:
+      source_col: day
+      spark_schema: o string, h string, l string, c string, v string, vw string, otc string
+  # Skip casting lastQuote because Polygon returns data with same key (but different case). Spark is
+  # case-insensitive for column names, so these will be seen as repeated column names.
+  - variant: CastJSONString
+    parameters:
+      source_col: lastTrade
+      spark_schema: c array<string>, i string, p string, s string, t string, x string
+  - variant: CastJSONString
+    parameters:
+      source_col: min
+      spark_schema: av string, c string, h string, l string, n string, o string, otc string, t string, v string, vw string
+  - variant: CastJSONString
+    parameters:
+      source_col: prevDay
+      spark_schema: c string, h string, l string, o string, otc string, v string, vw string
+  - variant: Select
+    parameters:
+      cols:
+        - _id
+        - ticker
+        - snapshot_date
+        - cast(todaysChangePerc as double) as todays_change_percent
+        - cast(todaysChange as double) as todays_change
+        - cast(updated/1000000000 as timestamp) as updated_ts
+        - struct(
+            cast(day.o as float) as open,
+            cast(day.h as float) as high,
+            cast(day.l as float) as low,
+            cast(day.c as float) as close,
+            cast(day.v as int) as volume,
+            cast(day.vw as float) as volume_weighted,
+            coalesce(cast(day.otc as boolean), FALSE) as otc
+          ) as day
+        - struct(
+            cast(get_json_object(lastQuote, '$.P') as float) as ask_price,
+            cast(get_json_object(lastQuote, '$.S') as int) as ask_size,
+            cast(get_json_object(lastQuote, '$.p') as float) as bid_price,
+            cast(get_json_object(lastQuote, '$.s') as int) as bid_size,
+            cast(cast(get_json_object(lastQuote, '$.t') as int)/1000000000 as timestamp) as ts
+          ) as last_quote
+        - struct(
+            lastTrade.c as conditions,
+            lastTrade.i as trade_id,
+            cast(lastTrade.p as float) as price,
+            cast(lastTrade.s as int) as size,
+            cast(lastTrade.t/1000000000 as timestamp) as ts,
+            cast(lastTrade.x as int) as exchange_id
+          ) as last_trade
+        - struct(
+            cast(min.av as int) as accumulated_volume,
+            cast(min.c as float) as close,
+            cast(min.h as float) as high,
+            cast(min.l as float) as low,
+            cast(min.n as int) as num_transactions,
+            cast(min.o as float) as open,
+            coalesce(cast(min.otc as boolean), FALSE) as otc,
+            cast(min.t/1000 as timestamp) as ts,
+            cast(min.v as int) as volume,
+            cast(min.vw as float) as volume_weighted
+          ) as min
+        - struct(
+            cast(prevDay.c as float) as close,
+            cast(prevDay.h as float) as high,
+            cast(prevDay.l as float) as low,
+            cast(prevDay.o as float) as open,
+            coalesce(cast(prevDay.otc as boolean), FALSE) as otc,
+            cast(prevDay.v as int) as volume,
+            cast(prevDay.vw as float) as volume_weighted
+          ) as previous_day
+  - variant: DropColumns
+    parameters:
+      cols: [_change_type, _commit_version, _commit_timestamp]
+
+consumer:
+  variant: MergeTable
+  parameters:
+    key_columns: [ticker, snapshot_date]
+    table: silver.polygon.snapshot_all_tickers

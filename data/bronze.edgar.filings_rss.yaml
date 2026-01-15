@@ -1,0 +1,11 @@
+config:
+  mode: batch
+
+producer:
+  variant: EdgarRSSFeedForm10Filings
+
+consumer:
+  variant: MergeTable
+  parameters:
+    key_columns: [id, title]
+    table: bronze.edgar.filings_rss

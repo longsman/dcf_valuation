@@ -1,0 +1,43 @@
+config:
+  mode: batch
+
+producer:
+  variant: RESTProducer
+  parameters:
+    url: https://api.polygon.io/v2/snapshot/locale/us/markets/stocks/tickers
+    method: GET
+    spark_schema: |
+        ticker string,
+        todaysChangePerc string,
+        todaysChange string,
+        updated string,
+        day map<string, string>,
+        lastQuote map<string, string>,
+        lastTrade map<string, string>,
+        min map<string, string>,
+        prevDay map<string, string>
+    api_key_secret:
+      scope: superwind
+      key: polygon.api_key
+    extract_from: [tickers]
+
+operators:
+  - variant: WithColumns
+    parameters:
+      cols_map:
+        snapshot_date: cast(from_utc_timestamp(current_timestamp(), 'PST') as date)
+        # If we leave input as python dict and let spark cast to string, it results in a value
+        # that is NOT valid JSON. To address, we first cast to Map<string, string> in the producer,
+        # then dump as a JSON string via to_json, which accepts either Map or Struct type and
+        # returns string.
+        day: to_json(day)
+        lastQuote: to_json(lastQuote)
+        lastTrade: to_json(lastTrade)
+        min: to_json(min)
+        prevDay: to_json(prevDay)
+
+consumer:
+  variant: MergeTable
+  parameters:
+    key_columns: [ticker, snapshot_date]
+    table: bronze.polygon.snapshot_all_tickers_tmp

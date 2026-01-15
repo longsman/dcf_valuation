@@ -1,0 +1,451 @@
+sic,damodaran_industry,mapping_version
+100,Farming/Agriculture,v1
+200,Farming/Agriculture,v1
+700,Farming/Agriculture,v1
+800,Farming/Agriculture,v1
+900,Farming/Agriculture,v1
+1000,Metals & Mining,v1
+1040,Precious Metals,v1
+1090,Metals & Mining,v1
+1200,Coal & Related Energy,v1
+1300,Oil/Gas (Production and Exploration),v1
+1311,Oil/Gas (Production and Exploration),v1
+1381,Oil/Gas (Production and Exploration),v1
+1382,Oilfield Svcs/Equip.,v1
+1389,Oilfield Svcs/Equip.,v1
+1400,Metals & Mining,v1
+1500,Homebuilding,v1
+1600,Engineering/Construction,v1
+1700,Engineering/Construction,v1
+2000,Food Processing,v1
+2011,Food Processing,v1
+2013,Food Processing,v1
+2015,Food Processing,v1
+2020,Food Processing,v1
+2030,Food Processing,v1
+2040,Food Processing,v1
+2050,Food Processing,v1
+2060,Food Processing,v1
+2070,Food Processing,v1
+2080,Beverage (Alcoholic),v1
+2082,Beverage (Alcoholic),v1
+2086,Beverage (Soft),v1
+2090,Food Processing,v1
+2100,Tobacco,v1
+2111,Tobacco,v1
+2200,Apparel,v1
+2211,Apparel,v1
+2221,Apparel,v1
+2250,Apparel,v1
+2253,Apparel,v1
+2273,Furn/Home Furnishings,v1
+2300,Apparel,v1
+2320,Apparel,v1
+2330,Apparel,v1
+2340,Apparel,v1
+2390,Apparel,v1
+2400,Paper/Forest Products,v1
+2421,Paper/Forest Products,v1
+2430,Paper/Forest Products,v1
+2451,Homebuilding,v1
+2500,Furn/Home Furnishings,v1
+2510,Furn/Home Furnishings,v1
+2511,Furn/Home Furnishings,v1
+2520,Furn/Home Furnishings,v1
+2531,Furn/Home Furnishings,v1
+2540,Furn/Home Furnishings,v1
+2590,Furn/Home Furnishings,v1
+2600,Paper/Forest Products,v1
+2611,Paper/Forest Products,v1
+2621,Paper/Forest Products,v1
+2631,Paper/Forest Products,v1
+2650,Packaging & Container,v1
+2670,Packaging & Container,v1
+2673,Packaging & Container,v1
+2700,Publishing & Newspapers,v1
+2711,Publishing & Newspapers,v1
+2721,Publishing & Newspapers,v1
+2731,Publishing & Newspapers,v1
+2732,Publishing & Newspapers,v1
+2741,Publishing & Newspapers,v1
+2750,Publishing & Newspapers,v1
+2761,Publishing & Newspapers,v1
+2780,Publishing & Newspapers,v1
+2790,Publishing & Newspapers,v1
+2800,Chemical (Basic),v1
+2810,Chemical (Basic),v1
+2820,Chemical (Specialty),v1
+2821,Chemical (Specialty),v1
+2833,Drugs (Pharmaceutical),v1
+2834,Drugs (Pharmaceutical),v1
+2835,Drugs (Biotechnology),v1
+2836,Drugs (Biotechnology),v1
+2840,Household Products,v1
+2841,Household Products,v1
+2842,Household Products,v1
+2844,Household Products,v1
+2851,Chemical (Specialty),v1
+2860,Chemical (Basic),v1
+2870,Chemical (Basic),v1
+2890,Chemical (Specialty),v1
+2891,Chemical (Specialty),v1
+2911,Oil/Gas (Integrated),v1
+2950,Building Materials,v1
+2990,Oil/Gas (Integrated),v1
+3000,Rubber& Tires,v1
+3011,Rubber& Tires,v1
+3021,Shoe,v1
+3050,Rubber& Tires,v1
+3060,Rubber& Tires,v1
+3080,Packaging & Container,v1
+3081,Packaging & Container,v1
+3086,Packaging & Container,v1
+3089,Packaging & Container,v1
+3100,Shoe,v1
+3140,Shoe,v1
+3200,Building Materials,v1
+3211,Building Materials,v1
+3220,Building Materials,v1
+3221,Packaging & Container,v1
+3231,Building Materials,v1
+3241,Building Materials,v1
+3250,Building Materials,v1
+3260,Building Materials,v1
+3270,Building Materials,v1
+3290,Building Materials,v1
+3310,Steel,v1
+3312,Steel,v1
+3316,Steel,v1
+3317,Steel,v1
+3320,Steel,v1
+3330,Metals & Mining,v1
+3334,Metals & Mining,v1
+3341,Metals & Mining,v1
+3350,Metals & Mining,v1
+3357,Electronics (General),v1
+3360,Metals & Mining,v1
+3390,Steel,v1
+3400,Construction Supplies,v1
+3411,Packaging & Container,v1
+3412,Packaging & Container,v1
+3420,Construction Supplies,v1
+3430,Construction Supplies,v1
+3433,Construction Supplies,v1
+3440,Construction Supplies,v1
+3442,Construction Supplies,v1
+3443,Construction Supplies,v1
+3444,Construction Supplies,v1
+3448,Construction Supplies,v1
+3460,Construction Supplies,v1
+3480,Construction Supplies,v1
+3490,Construction Supplies,v1
+3500,Machinery,v1
+3510,Machinery,v1
+3523,Machinery,v1
+3524,Machinery,v1
+3530,Machinery,v1
+3531,Machinery,v1
+3532,Machinery,v1
+3533,Oilfield Svcs/Equip.,v1
+3537,Machinery,v1
+3540,Machinery,v1
+3541,Machinery,v1
+3550,Machinery,v1
+3555,Machinery,v1
+3559,Machinery,v1
+3560,Machinery,v1
+3561,Machinery,v1
+3562,Machinery,v1
+3564,Machinery,v1
+3567,Machinery,v1
+3569,Machinery,v1
+3570,Computers/Peripherals,v1
+3571,Computers/Peripherals,v1
+3572,Computers/Peripherals,v1
+3575,Computers/Peripherals,v1
+3576,Telecom. Equipment,v1
+3577,Computers/Peripherals,v1
+3578,Office Equipment & Services,v1
+3579,Office Equipment & Services,v1
+3580,Machinery,v1
+3585,Machinery,v1
+3590,Machinery,v1
+3600,Electrical Equipment,v1
+3612,Electrical Equipment,v1
+3613,Electrical Equipment,v1
+3620,Electrical Equipment,v1
+3621,Electrical Equipment,v1
+3630,Electronics (Consumer & Office),v1
+3634,Electronics (Consumer & Office),v1
+3640,Electrical Equipment,v1
+3651,Electronics (Consumer & Office),v1
+3661,Telecom. Equipment,v1
+3663,Telecom. Equipment,v1
+3669,Telecom. Equipment,v1
+3670,Electronics (General),v1
+3672,Electronics (General),v1
+3674,Semiconductor,v1
+3677,Electronics (General),v1
+3678,Electronics (General),v1
+3679,Electronics (General),v1
+3690,Electrical Equipment,v1
+3695,Electronics (General),v1
+3711,Auto & Truck,v1
+3713,Auto & Truck,v1
+3714,Auto Parts,v1
+3715,Auto & Truck,v1
+3716,Recreation,v1
+3720,Aerospace/Defense,v1
+3721,Aerospace/Defense,v1
+3724,Aerospace/Defense,v1
+3728,Aerospace/Defense,v1
+3730,Shipbuilding & Marine,v1
+3743,Transportation (Railroads),v1
+3751,Recreation,v1
+3760,Aerospace/Defense,v1
+3790,Auto Parts,v1
+3812,Aerospace/Defense,v1
+3821,Healthcare Products,v1
+3822,Electronics (General),v1
+3823,Electronics (General),v1
+3824,Electronics (General),v1
+3825,Electronics (General),v1
+3826,Healthcare Products,v1
+3827,Healthcare Products,v1
+3829,Electronics (General),v1
+3841,Healthcare Products,v1
+3842,Healthcare Products,v1
+3843,Healthcare Products,v1
+3844,Healthcare Products,v1
+3845,Healthcare Products,v1
+3851,Healthcare Products,v1
+3861,Recreation,v1
+3873,Electronics (Consumer & Office),v1
+3910,Household Products,v1
+3911,Household Products,v1
+3931,Recreation,v1
+3942,Recreation,v1
+3944,Recreation,v1
+3949,Recreation,v1
+3950,Recreation,v1
+3960,Household Products,v1
+3990,Diversified,v1
+4011,Transportation (Railroads),v1
+4013,Transportation (Railroads),v1
+4100,Transportation,v1
+4210,Trucking,v1
+4213,Trucking,v1
+4220,Trucking,v1
+4400,Transportation,v1
+4412,Transportation,v1
+4500,Air Transport,v1
+4512,Air Transport,v1
+4513,Air Transport,v1
+4522,Air Transport,v1
+4581,Air Transport,v1
+4600,Oil/Gas Distribution,v1
+4610,Oil/Gas Distribution,v1
+4700,Transportation,v1
+4731,Transportation,v1
+4800,Telecom. Services,v1
+4812,Telecom (Wireless),v1
+4813,Telecom. Services,v1
+4822,Telecom. Services,v1
+4832,Broadcasting,v1
+4833,Broadcasting,v1
+4841,Cable TV,v1
+4899,Telecom. Services,v1
+4900,Utility (General),v1
+4911,Power,v1
+4922,Oil/Gas Distribution,v1
+4923,Oil/Gas Distribution,v1
+4924,Oil/Gas Distribution,v1
+4931,Utility (General),v1
+4932,Utility (General),v1
+4941,Utility (Water),v1
+4950,Environmental & Waste Services,v1
+4953,Environmental & Waste Services,v1
+4955,Environmental & Waste Services,v1
+4961,Power,v1
+4991,Utility (General),v1
+5000,Retail (Distributors),v1
+5010,Retail (Automotive),v1
+5013,Retail (Automotive),v1
+5020,Furn/Home Furnishings,v1
+5030,Building Materials,v1
+5031,Building Materials,v1
+5040,Retail (Distributors),v1
+5045,Computers/Peripherals,v1
+5047,Healthcare Support Services,v1
+5050,Metals & Mining,v1
+5051,Metals & Mining,v1
+5060,Electrical Equipment,v1
+5063,Electrical Equipment,v1
+5064,Electronics (Consumer & Office),v1
+5065,Electronics (General),v1
+5070,Construction Supplies,v1
+5080,Machinery,v1
+5082,Machinery,v1
+5084,Machinery,v1
+5090,Retail (Distributors),v1
+5094,Retail (Distributors),v1
+5099,Retail (Distributors),v1
+5110,Retail (Distributors),v1
+5122,Drugs (Pharmaceutical),v1
+5130,Apparel,v1
+5140,Food Wholesalers,v1
+5141,Food Wholesalers,v1
+5150,Farming/Agriculture,v1
+5160,Chemical (Basic),v1
+5171,Oil/Gas Distribution,v1
+5172,Oil/Gas Distribution,v1
+5180,Beverage (Alcoholic),v1
+5190,Retail (Distributors),v1
+5200,Retail (Building Supply),v1
+5211,Retail (Building Supply),v1
+5251,Retail (Building Supply),v1
+5300,Retail (General),v1
+5311,Retail (General),v1
+5331,Retail (General),v1
+5399,Retail (General),v1
+5400,Retail (Grocery and Food),v1
+5411,Retail (Grocery and Food),v1
+5412,Retail (Grocery and Food),v1
+5500,Retail (Automotive),v1
+5511,Retail (Automotive),v1
+5531,Retail (Automotive),v1
+5533,Retail (Automotive),v1
+5541,Retail (Automotive),v1
+5599,Retail (Automotive),v1
+5600,Retail (Special Lines),v1
+5621,Retail (Special Lines),v1
+5651,Retail (Special Lines),v1
+5661,Shoe,v1
+5700,Retail (Special Lines),v1
+5712,Furn/Home Furnishings,v1
+5731,Electronics (Consumer & Office),v1
+5734,Computer Services,v1
+5735,Recreation,v1
+5810,Restaurant/Dining,v1
+5812,Restaurant/Dining,v1
+5900,Retail (Special Lines),v1
+5912,Drugs (Pharmaceutical),v1
+5940,Retail (Special Lines),v1
+5941,Retail (Special Lines),v1
+5942,Retail (Special Lines),v1
+5944,Retail (Special Lines),v1
+5945,Recreation,v1
+5960,Retail (Online),v1
+5961,Retail (Online),v1
+5990,Retail (Special Lines),v1
+6000,Banks (Regional),v1
+6020,Bank (Money Center),v1
+6021,Bank (Money Center),v1
+6022,Banks (Regional),v1
+6029,Banks (Regional),v1
+6035,Banks (Regional),v1
+6036,Banks (Regional),v1
+6099,Financial Svcs. (Non-bank & Insurance),v1
+6111,Financial Svcs. (Non-bank & Insurance),v1
+6141,Financial Svcs. (Non-bank & Insurance),v1
+6153,Financial Svcs. (Non-bank & Insurance),v1
+6159,Financial Svcs. (Non-bank & Insurance),v1
+6162,Financial Svcs. (Non-bank & Insurance),v1
+6163,Financial Svcs. (Non-bank & Insurance),v1
+6172,Financial Svcs. (Non-bank & Insurance),v1
+6189,Financial Svcs. (Non-bank & Insurance),v1
+6199,Financial Svcs. (Non-bank & Insurance),v1
+6200,Brokerage & Investment Banking,v1
+6211,Brokerage & Investment Banking,v1
+6221,Brokerage & Investment Banking,v1
+6282,Investments & Asset Management,v1
+6311,Insurance (Life),v1
+6321,Insurance (Life),v1
+6324,Insurance (Life),v1
+6331,Insurance (Prop/Cas.),v1
+6351,Insurance (Prop/Cas.),v1
+6361,Insurance (Prop/Cas.),v1
+6399,Insurance (General),v1
+6411,Insurance (General),v1
+6500,Real Estate (General/Diversified),v1
+6510,Real Estate (Operations & Services),v1
+6512,Real Estate (Operations & Services),v1
+6513,Real Estate (Operations & Services),v1
+6519,Real Estate (Operations & Services),v1
+6531,Real Estate (Operations & Services),v1
+6532,Real Estate (Development),v1
+6552,Real Estate (Development),v1
+6700,Investments & Asset Management,v1
+6770,Investments & Asset Management,v1
+6792,Investments & Asset Management,v1
+6794,Investments & Asset Management,v1
+6795,Investments & Asset Management,v1
+6798,R.E.I.T.,v1
+6799,Investments & Asset Management,v1
+7000,Hotel/Gaming,v1
+7011,Hotel/Gaming,v1
+7200,Business & Consumer Services,v1
+7310,Advertising,v1
+7311,Advertising,v1
+7320,Business & Consumer Services,v1
+7330,Business & Consumer Services,v1
+7331,Computer Services,v1
+7340,Business & Consumer Services,v1
+7350,Business & Consumer Services,v1
+7359,Business & Consumer Services,v1
+7361,Business & Consumer Services,v1
+7363,Business & Consumer Services,v1
+7370,Software (System & Application),v1
+7371,Software (System & Application),v1
+7372,Software (System & Application),v1
+7373,Computer Services,v1
+7374,Computer Services,v1
+7377,Computer Services,v1
+7379,Computer Services,v1
+7380,Business & Consumer Services,v1
+7381,Business & Consumer Services,v1
+7384,Business & Consumer Services,v1
+7389,Business & Consumer Services,v1
+7500,Retail (Automotive),v1
+7510,Retail (Automotive),v1
+7600,Business & Consumer Services,v1
+7812,Entertainment,v1
+7819,Entertainment,v1
+7822,Entertainment,v1
+7829,Entertainment,v1
+7830,Entertainment,v1
+7841,Entertainment,v1
+7900,Recreation,v1
+7940,Recreation,v1
+7941,Recreation,v1
+7948,Hotel/Gaming,v1
+7990,Recreation,v1
+7991,Recreation,v1
+7993,Hotel/Gaming,v1
+7996,Recreation,v1
+7997,Recreation,v1
+7999,Recreation,v1
+8000,Hospitals/Healthcare Facilities,v1
+8011,Hospitals/Healthcare Facilities,v1
+8050,Hospitals/Healthcare Facilities,v1
+8051,Hospitals/Healthcare Facilities,v1
+8060,Hospitals/Healthcare Facilities,v1
+8062,Hospitals/Healthcare Facilities,v1
+8071,Healthcare Support Services,v1
+8082,Healthcare Support Services,v1
+8090,Healthcare Support Services,v1
+8093,Healthcare Support Services,v1
+8111,Business & Consumer Services,v1
+8200,Education,v1
+8300,Business & Consumer Services,v1
+8351,Business & Consumer Services,v1
+8700,Business & Consumer Services,v1
+8711,Engineering/Construction,v1
+8731,Drugs (Biotechnology),v1
+8734,Business & Consumer Services,v1
+8741,Business & Consumer Services,v1
+8742,Business & Consumer Services,v1
+8744,Business & Consumer Services,v1
+8880,Business & Consumer Services,v1
+8900,Business & Consumer Services,v1
+9721,Diversified,v1

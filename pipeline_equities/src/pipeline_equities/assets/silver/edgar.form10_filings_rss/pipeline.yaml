@@ -1,0 +1,59 @@
+config:
+  mode: streaming
+  streaming_trigger_mode:
+    available_now: True
+  checkpoint_path: s3://datsando-prod/pipeline_equities/checkpoints/silver/edgar/filings_rss
+
+producer:
+  variant: ReadTable
+  parameters:
+    table: bronze.edgar.form10_filings_rss
+    options:
+      readChangeFeed: True
+      startingVersion: 34
+
+operators:
+  - variant: Filter
+    parameters:
+      condition: _change_type = 'insert'
+  - variant: RegexpExtract
+    parameters:
+      source_col: id
+      target_col: accession_number
+      pattern: 'urn:.+?:accession-number=(\d+-\d+-\d+)'
+  - variant: RegexpExtract
+    parameters:
+      source_col: title
+      target_col: cik
+      pattern: '10-.+?\((\d+?)\)\s*?\(Filer\)'
+  - variant: RegexpExtract
+    parameters:
+      source_col: summary
+      target_col: filed_date
+      pattern: '<b>Filed:</b>\s*?(\d{4}-\d{2}-\d{2})'
+  - variant: RegexpExtract
+    parameters:
+      source_col: title
+      target_col: form_type
+      pattern: '(10-.*?)\s*-'
+  - variant: Select
+    parameters:
+      cols:
+        # Need to keep original _id around to allow Consumer to use as upstream_id
+        - _id
+        - id as filing_id
+        - accession_number
+        - lpad(cik, 10, '0') as cik
+        - link
+        - cast(filed_date as date) as filed_date
+        - form_type
+        - title
+        - cast(updated as timestamp) as updated
+  - variant: StripStrings
+  - variant: ConvertStringToNull
+
+consumer:
+  variant: MergeTable
+  parameters:
+    key_columns: [filing_id, title]
+    table: silver.edgar.form10_filings_rss
