@@ -1,5 +1,5 @@
 # gold.dim.company
-# Derives company dimension from silver.edgar.company_facts (companyfacts headers)
+# Derives company dimension with SIC codes from SEC submissions API
 # Determines is_financial based on SIC codes (6000-6999 = financial)
 
 config:
@@ -26,35 +26,42 @@ producer:
         where cf.taxonomy = 'dei' and cf.tag = 'EntityRegistrantName'
         group by cf.cik
       ),
-      sic_codes as (
-        -- Get SIC from SEC RSS feed titles or derive from company name patterns
-        -- For v1, we extract from silver.edgar.form10_filings_rss if available
-        -- This will need enhancement with SEC company submissions data
-        select distinct
+      -- Get SIC and metadata from SEC submissions API
+      sic_data as (
+        select
           cik,
-          cast(null as int) as sic  -- placeholder until we have submissions data
-        from silver.edgar.form10_filings_rss
+          try_cast(nullif(sic, '') as int) as sic,
+          sic_description,
+          entity_name as sec_entity_name,
+          fiscal_year_end,
+          state_of_incorporation,
+          category
+        from bronze.sec.company_submissions
       )
       select
         en.cik,
-        en.entity_name,
-        sc.sic,
+        coalesce(sd.sec_entity_name, en.entity_name) as entity_name,
+        sd.sic,
+        sd.sic_description,
         case 
-          when sc.sic >= 6000 and sc.sic < 7000 then true
+          when sd.sic >= 6000 and sd.sic < 7000 then true
           else false
         end as is_financial,
         case
-          when sc.sic >= 6000 and sc.sic < 6100 then 'depository'
-          when sc.sic >= 6100 and sc.sic < 6200 then 'nondepository_credit'
-          when sc.sic >= 6200 and sc.sic < 6300 then 'securities_commodities'
-          when sc.sic >= 6300 and sc.sic < 6400 then 'insurance_carriers'
-          when sc.sic >= 6400 and sc.sic < 6500 then 'insurance_agents'
-          when sc.sic >= 6500 and sc.sic < 6600 then 'real_estate'
-          when sc.sic >= 6700 and sc.sic < 7000 then 'holding_investment'
+          when sd.sic >= 6000 and sd.sic < 6100 then 'depository'
+          when sd.sic >= 6100 and sd.sic < 6200 then 'nondepository_credit'
+          when sd.sic >= 6200 and sd.sic < 6300 then 'securities_commodities'
+          when sd.sic >= 6300 and sd.sic < 6400 then 'insurance_carriers'
+          when sd.sic >= 6400 and sd.sic < 6500 then 'insurance_agents'
+          when sd.sic >= 6500 and sd.sic < 6600 then 'real_estate'
+          when sd.sic >= 6700 and sd.sic < 7000 then 'holding_investment'
           else null
-        end as financial_class
+        end as financial_class,
+        sd.fiscal_year_end,
+        sd.state_of_incorporation,
+        sd.category
       from entity_names en
-      left join sic_codes sc on en.cik = sc.cik
+      left join sic_data sd on en.cik = sd.cik
 
 consumer:
   variant: MergeTable

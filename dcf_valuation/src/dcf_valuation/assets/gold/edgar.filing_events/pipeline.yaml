@@ -1,5 +1,6 @@
 # gold.edgar.filing_events
 # Processes silver.edgar.form10_filings_rss via CDF to create filing events
+# Consider scrapping this and reading directly from silver. 
 
 config:
   mode: streaming

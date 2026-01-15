@@ -1,5 +1,6 @@
-# DEV-only job definition: gold layer tasks only
-# Bronze/silver tasks removed - reads from tables populated by PRD job
+# DEV-only job definition
+# Includes bronze SEC tasks for CIK-ticker and company submissions
+# Gold layer reads from PRD silver tables + DEV bronze SEC tables
 # This job runs 40 min after PRD schedule to ensure fresh silver data
 
 task_defaults: &task_defaults
@@ -28,6 +29,27 @@ resources:
       performance_target: PERFORMANCE_OPTIMIZED
 
       tasks:
+        # ===========================================
+        # Bronze layer: SEC reference data
+        # ===========================================
+        - <<: *task_defaults
+          task_key: bronze-sec-company_tickers
+          python_wheel_task:
+            <<: *python_wheel_task_defaults
+            named_parameters:
+              from_package: ${var.from_package}
+              yaml_file: bronze/sec.company_tickers/pipeline.yaml
+
+        - <<: *task_defaults
+          task_key: bronze-sec-company_submissions
+          depends_on:
+            - task_key: bronze-sec-company_tickers
+          python_wheel_task:
+            <<: *python_wheel_task_defaults
+            named_parameters:
+              from_package: ${var.from_package}
+              yaml_file: bronze/sec.company_submissions/pipeline.yaml
+
         # ===========================================
         # Gold layer: Damodaran reference data (seed tables)
         # ===========================================
@@ -76,7 +98,8 @@ resources:
 
         - <<: *task_defaults
           task_key: gold-dim-company
-          # No depends_on: reads from silver tables directly (populated by PRD)
+          depends_on:
+            - task_key: bronze-sec-company_submissions
           python_wheel_task:
             <<: *python_wheel_task_defaults
             named_parameters:
@@ -85,7 +108,8 @@ resources:
 
         - <<: *task_defaults
           task_key: gold-dim-cik_ticker
-          # No depends_on: reads from silver tables directly (populated by PRD)
+          depends_on:
+            - task_key: bronze-sec-company_submissions
           python_wheel_task:
             <<: *python_wheel_task_defaults
             named_parameters:
@@ -111,6 +135,17 @@ resources:
             named_parameters:
               from_package: ${var.from_package}
               yaml_file: gold/edgar.filing_events/pipeline.yaml
+
+        - <<: *task_defaults
+          task_key: gold-edgar-filing_events_backfill
+          # Backfill historical filings from company_facts (runs after RSS streaming)
+          depends_on:
+            - task_key: gold-edgar-filing_events
+          python_wheel_task:
+            <<: *python_wheel_task_defaults
+            named_parameters:
+              from_package: ${var.from_package}
+              yaml_file: gold/edgar.filing_events_backfill/pipeline.yaml
 
         - <<: *task_defaults
           task_key: gold-market-prices_daily
@@ -191,7 +226,7 @@ resources:
         - <<: *task_defaults
           task_key: gold-valuation-dcf_inputs
           depends_on:
-            - task_key: gold-edgar-filing_events
+            - task_key: gold-edgar-filing_events_backfill  # Changed: depend on backfill instead of streaming
             - task_key: gold-dim-company
             - task_key: gold-dim-sic_to_damodaran_industry
             - task_key: gold-financials-flow_ttm

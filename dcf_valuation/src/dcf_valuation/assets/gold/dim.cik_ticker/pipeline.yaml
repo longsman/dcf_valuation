@@ -1,31 +1,44 @@
 # gold.dim.cik_ticker
-# Loads CIK to ticker mapping from SEC EDGAR company_tickers.json seed
-# Source: https://www.sec.gov/files/company_tickers.json
+# Creates CIK-ticker mapping from SEC submissions data
+# Explodes tickers[] array and marks first ticker as primary
+# Source: bronze.sec.company_submissions (populated from SEC API)
 
 config:
   mode: batch
 
 producer:
-  variant: ReadCSV
+  variant: ExecSQL
   parameters:
-    path: $ASSET_PATH{dcf_valuation.assets, gold/seed/dim/cik_ticker.csv}
-    options:
-      header: "true"
-      inferSchema: "false"
-
-operators:
-  - variant: WithColumns
-    parameters:
-      cols_map:
-        is_primary: cast(is_primary as boolean)
-
-  - variant: Select
-    parameters:
-      cols:
-        - cik
-        - ticker
-        - is_primary
-        # company_name intentionally excluded to match table schema
+    sql_query: |
+      with exploded as (
+        select
+          cik,
+          posexplode(tickers) as (ticker_idx, ticker),
+          exchanges
+        from bronze.sec.company_submissions
+        where tickers is not null and size(tickers) > 0
+      ),
+      with_exchange as (
+        select
+          cik,
+          ticker,
+          ticker_idx,
+          -- Safely get exchange, handling array length mismatch
+          case 
+            when exchanges is not null and size(exchanges) > ticker_idx 
+            then exchanges[ticker_idx]
+            else null
+          end as exchange
+        from exploded
+      )
+      -- Deduplicate in case same ticker appears multiple times for same CIK
+      select
+        cik,
+        ticker,
+        first(exchange) as exchange,
+        min(ticker_idx) = 0 as is_primary  -- First ticker in array is primary
+      from with_exchange
+      group by cik, ticker
 
 consumer:
   variant: MergeTable

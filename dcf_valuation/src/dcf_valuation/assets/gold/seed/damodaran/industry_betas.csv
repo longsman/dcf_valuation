@@ -94,3 +94,98 @@ as_of_year,damodaran_industry,unlevered_beta,d_e_ratio,tax_rate,num_firms,source
 2024,Utility (General),0.47,0.87,0.15,16,https://pages.stern.nyu.edu/~adamodar/
 2024,Utility (Water),0.49,0.67,0.17,17,https://pages.stern.nyu.edu/~adamodar/
 2024,Total Market,1.00,0.30,0.25,7927,https://pages.stern.nyu.edu/~adamodar/
+2026,Advertising,0.93,0.40,0.05,52,https://pages.stern.nyu.edu/~adamodar/
+2026,Aerospace/Defense,0.85,0.16,0.12,79,https://pages.stern.nyu.edu/~adamodar/
+2026,Air Transport,0.70,0.91,0.08,23,https://pages.stern.nyu.edu/~adamodar/
+2026,Apparel,0.76,0.31,0.10,35,https://pages.stern.nyu.edu/~adamodar/
+2026,Auto & Truck,1.27,0.20,0.04,33,https://pages.stern.nyu.edu/~adamodar/
+2026,Auto Parts,1.02,0.41,0.15,35,https://pages.stern.nyu.edu/~adamodar/
+2026,Bank (Money Center),0.34,1.64,0.18,15,https://pages.stern.nyu.edu/~adamodar/
+2026,Banks (Regional),0.29,0.52,0.18,568,https://pages.stern.nyu.edu/~adamodar/
+2026,Beverage (Alcoholic),0.61,0.43,0.12,14,https://pages.stern.nyu.edu/~adamodar/
+2026,Beverage (Soft),0.56,0.21,0.07,27,https://pages.stern.nyu.edu/~adamodar/
+2026,Broadcasting,0.29,0.86,0.08,24,https://pages.stern.nyu.edu/~adamodar/
+2026,Brokerage & Investment Banking,0.58,1.36,0.15,32,https://pages.stern.nyu.edu/~adamodar/
+2026,Building Materials,0.93,0.26,0.18,41,https://pages.stern.nyu.edu/~adamodar/
+2026,Business & Consumer Services,0.77,0.20,0.10,155,https://pages.stern.nyu.edu/~adamodar/
+2026,Cable TV,0.35,1.47,0.11,9,https://pages.stern.nyu.edu/~adamodar/
+2026,Chemical (Basic),0.58,0.99,0.08,29,https://pages.stern.nyu.edu/~adamodar/
+2026,Chemical (Diversified),0.37,1.76,0.00,4,https://pages.stern.nyu.edu/~adamodar/
+2026,Chemical (Specialty),0.79,0.30,0.14,59,https://pages.stern.nyu.edu/~adamodar/
+2026,Coal & Related Energy,1.02,0.07,0.03,16,https://pages.stern.nyu.edu/~adamodar/
+2026,Computer Services,0.92,0.25,0.11,64,https://pages.stern.nyu.edu/~adamodar/
+2026,Computers/Peripherals,1.31,0.05,0.06,36,https://pages.stern.nyu.edu/~adamodar/
+2026,Construction Supplies,1.02,0.18,0.16,40,https://pages.stern.nyu.edu/~adamodar/
+2026,Diversified,0.79,0.16,0.03,20,https://pages.stern.nyu.edu/~adamodar/
+2026,Drugs (Biotechnology),1.03,0.13,0.01,496,https://pages.stern.nyu.edu/~adamodar/
+2026,Drugs (Pharmaceutical),0.89,0.15,0.03,228,https://pages.stern.nyu.edu/~adamodar/
+2026,Education,0.66,0.24,0.16,32,https://pages.stern.nyu.edu/~adamodar/
+2026,Electrical Equipment,1.15,0.12,0.05,112,https://pages.stern.nyu.edu/~adamodar/
+2026,Electronics (Consumer & Office),0.83,0.06,0.00,8,https://pages.stern.nyu.edu/~adamodar/
+2026,Electronics (General),0.90,0.11,0.08,114,https://pages.stern.nyu.edu/~adamodar/
+2026,Engineering/Construction,1.09,0.14,0.14,48,https://pages.stern.nyu.edu/~adamodar/
+2026,Entertainment,0.74,0.16,0.03,92,https://pages.stern.nyu.edu/~adamodar/
+2026,Environmental & Waste Services,0.81,0.21,0.04,53,https://pages.stern.nyu.edu/~adamodar/
+2026,Farming/Agriculture,0.81,0.52,0.06,35,https://pages.stern.nyu.edu/~adamodar/
+2026,Financial Svcs. (Non-bank & Insurance),0.32,2.72,0.12,176,https://pages.stern.nyu.edu/~adamodar/
+2026,Food Processing,0.46,0.44,0.10,78,https://pages.stern.nyu.edu/~adamodar/
+2026,Food Wholesalers,0.64,0.47,0.09,13,https://pages.stern.nyu.edu/~adamodar/
+2026,Furn/Home Furnishings,0.62,0.42,0.11,27,https://pages.stern.nyu.edu/~adamodar/
+2026,Green & Renewable Energy,0.46,1.13,0.00,15,https://pages.stern.nyu.edu/~adamodar/
+2026,Healthcare Products,0.83,0.13,0.05,204,https://pages.stern.nyu.edu/~adamodar/
+2026,Healthcare Support Services,0.69,0.35,0.10,104,https://pages.stern.nyu.edu/~adamodar/
+2026,Heathcare Information and Technology,0.99,0.16,0.06,115,https://pages.stern.nyu.edu/~adamodar/
+2026,Homebuilding,0.78,0.21,0.17,30,https://pages.stern.nyu.edu/~adamodar/
+2026,Hospitals/Healthcare Facilities,0.55,0.60,0.11,31,https://pages.stern.nyu.edu/~adamodar/
+2026,Hotel/Gaming,0.83,0.40,0.08,63,https://pages.stern.nyu.edu/~adamodar/
+2026,Household Products,0.72,0.18,0.07,110,https://pages.stern.nyu.edu/~adamodar/
+2026,Information Services,0.74,0.33,0.18,15,https://pages.stern.nyu.edu/~adamodar/
+2026,Insurance (General),0.56,0.26,0.13,21,https://pages.stern.nyu.edu/~adamodar/
+2026,Insurance (Life),0.43,0.68,0.15,20,https://pages.stern.nyu.edu/~adamodar/
+2026,Insurance (Prop/Cas.),0.44,0.15,0.18,57,https://pages.stern.nyu.edu/~adamodar/
+2026,Investments & Asset Management,0.53,0.33,0.04,283,https://pages.stern.nyu.edu/~adamodar/
+2026,Machinery,0.87,0.15,0.13,105,https://pages.stern.nyu.edu/~adamodar/
+2026,Metals & Mining,0.96,0.11,0.03,73,https://pages.stern.nyu.edu/~adamodar/
+2026,Office Equipment & Services,0.98,0.48,0.12,14,https://pages.stern.nyu.edu/~adamodar/
+2026,Oil/Gas (Integrated),0.27,0.14,0.28,4,https://pages.stern.nyu.edu/~adamodar/
+2026,Oil/Gas (Production and Exploration),0.56,0.38,0.07,142,https://pages.stern.nyu.edu/~adamodar/
+2026,Oil/Gas Distribution,0.47,0.59,0.09,23,https://pages.stern.nyu.edu/~adamodar/
+2026,Oilfield Svcs/Equip.,0.74,0.37,0.09,97,https://pages.stern.nyu.edu/~adamodar/
+2026,Packaging & Container,0.72,0.55,0.16,19,https://pages.stern.nyu.edu/~adamodar/
+2026,Paper/Forest Products,0.72,0.44,0.09,6,https://pages.stern.nyu.edu/~adamodar/
+2026,Power,0.31,0.74,0.13,46,https://pages.stern.nyu.edu/~adamodar/
+2026,Precious Metals,0.79,0.07,0.06,56,https://pages.stern.nyu.edu/~adamodar/
+2026,Publishing & Newspapers,0.48,0.24,0.10,19,https://pages.stern.nyu.edu/~adamodar/
+2026,R.E.I.T.,0.39,0.84,0.02,190,https://pages.stern.nyu.edu/~adamodar/
+2026,Real Estate (Development),0.48,1.02,0.05,14,https://pages.stern.nyu.edu/~adamodar/
+2026,Real Estate (General/Diversified),0.58,0.54,0.05,12,https://pages.stern.nyu.edu/~adamodar/
+2026,Real Estate (Operations & Services),0.81,0.25,0.09,54,https://pages.stern.nyu.edu/~adamodar/
+2026,Recreation,0.70,0.63,0.11,49,https://pages.stern.nyu.edu/~adamodar/
+2026,Reinsurance,0.44,0.43,0.30,1,https://pages.stern.nyu.edu/~adamodar/
+2026,Restaurant/Dining,0.77,0.27,0.10,64,https://pages.stern.nyu.edu/~adamodar/
+2026,Retail (Automotive),0.70,0.45,0.11,34,https://pages.stern.nyu.edu/~adamodar/
+2026,Retail (Building Supply),1.31,0.23,0.12,14,https://pages.stern.nyu.edu/~adamodar/
+2026,Retail (Distributors),0.78,0.28,0.15,62,https://pages.stern.nyu.edu/~adamodar/
+2026,Retail (General),0.76,0.08,0.19,23,https://pages.stern.nyu.edu/~adamodar/
+2026,Retail (Grocery and Food),0.80,0.52,0.12,15,https://pages.stern.nyu.edu/~adamodar/
+2026,Retail (Online),0.95,0.20,0.10,94,https://pages.stern.nyu.edu/~adamodar/
+2026,Retail (Special Lines),0.95,0.20,0.10,94,https://pages.stern.nyu.edu/~adamodar/
+2026,Rubber& Tires,0.14,3.58,0.00,3,https://pages.stern.nyu.edu/~adamodar/
+2026,Semiconductor,1.49,0.03,0.05,66,https://pages.stern.nyu.edu/~adamodar/
+2026,Semiconductor Equip,1.35,0.05,0.10,31,https://pages.stern.nyu.edu/~adamodar/
+2026,Shipbuilding & Marine,0.64,0.23,0.05,8,https://pages.stern.nyu.edu/~adamodar/
+2026,Shoe,0.93,0.12,0.12,11,https://pages.stern.nyu.edu/~adamodar/
+2026,Software (Entertainment),1.01,0.02,0.05,77,https://pages.stern.nyu.edu/~adamodar/
+2026,Software (Internet),1.55,0.12,0.03,29,https://pages.stern.nyu.edu/~adamodar/
+2026,Software (System & Application),1.23,0.06,0.06,309,https://pages.stern.nyu.edu/~adamodar/
+2026,Steel,0.90,0.24,0.09,19,https://pages.stern.nyu.edu/~adamodar/
+2026,Telecom (Wireless),0.39,0.52,0.04,12,https://pages.stern.nyu.edu/~adamodar/
+2026,Telecom. Equipment,0.86,0.09,0.07,57,https://pages.stern.nyu.edu/~adamodar/
+2026,Telecom. Services,0.37,0.96,0.03,39,https://pages.stern.nyu.edu/~adamodar/
+2026,Tobacco,0.68,0.23,0.15,10,https://pages.stern.nyu.edu/~adamodar/
+2026,Transportation,0.68,0.36,0.09,19,https://pages.stern.nyu.edu/~adamodar/
+2026,Transportation (Railroads),0.81,0.28,0.17,4,https://pages.stern.nyu.edu/~adamodar/
+2026,Trucking,0.85,0.25,0.13,26,https://pages.stern.nyu.edu/~adamodar/
+2026,Utility (General),0.15,0.81,0.13,14,https://pages.stern.nyu.edu/~adamodar/
+2026,Utility (Water),0.28,0.62,0.11,14,https://pages.stern.nyu.edu/~adamodar/
+2026,Total Market,0.72,0.35,0.08,5994,https://pages.stern.nyu.edu/~adamodar/

@@ -1,0 +1,49 @@
+# bronze.sec.company_tickers
+# Fetches CIK-ticker mapping from SEC bulk JSON file
+# Source: https://www.sec.gov/files/company_tickers.json
+# Expected rows: ~13,000
+
+config:
+  mode: batch
+
+producer:
+  variant: RESTProducer
+  parameters:
+    url: https://www.sec.gov/files/company_tickers.json
+    method: GET
+    headers:
+      User-Agent: "Datsando datsando@outlook.com"
+
+operators:
+  # Parse JSON object into map, then explode to rows
+  - variant: WithColumns
+    parameters:
+      cols_map:
+        content: cast(content as string)
+
+  - variant: ExecSQL
+    parameters:
+      sql_query: |
+        with parsed as (
+          select
+            from_json(
+              content, 
+              'map<string, struct<cik_str:long, ticker:string, title:string>>'
+            ) as entries
+          from data
+        ),
+        exploded as (
+          select explode(map_values(entries)) as entry
+          from parsed
+        )
+        select
+          lpad(cast(entry.cik_str as string), 10, '0') as cik,
+          entry.ticker as ticker,
+          entry.title as company_name
+        from exploded
+
+consumer:
+  variant: SaveAsTable
+  parameters:
+    table: bronze.sec.company_tickers
+    mode: overwrite

@@ -7,7 +7,7 @@ config:
   streaming_defer_operators: True
   streaming_trigger_mode:
     available_now: True
-  checkpoint_path: s3://datsando-prod/dcf_valuation/checkpoints/gold/financials/statement_lines_v1
+  checkpoint_path: s3://datsando-prod/dcf_valuation/checkpoints/gold/financials/statement_lines_v2
 
 producer:
   variant: ReadTable
@@ -15,7 +15,6 @@ producer:
     table: silver.edgar.company_facts
     options:
       readChangeFeed: True
-      # Incremental mode - process only new changes from latest version
       startingVersion: $ENV{CDF_STARTING_VERSION:latest}
 
 operators:

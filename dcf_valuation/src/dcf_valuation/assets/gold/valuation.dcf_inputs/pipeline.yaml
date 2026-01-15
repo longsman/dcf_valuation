@@ -6,7 +6,7 @@ config:
   streaming_defer_operators: True
   streaming_trigger_mode:
     available_now: True
-  checkpoint_path: s3://datsando-prod/dcf_valuation/checkpoints/gold/valuation/dcf_inputs_v1
+  checkpoint_path: s3://datsando-prod/dcf_valuation/checkpoints/gold/valuation/dcf_inputs_v2
 
 producer:
   variant: ReadTable
@@ -14,7 +14,7 @@ producer:
     table: gold.edgar.filing_events
     options:
       readChangeFeed: True
-      startingVersion: $ENV{CDF_STARTING_VERSION:11}
+      startingVersion: $ENV{CDF_STARTING_VERSION:latest}
 
 operators:
   - variant: Filter

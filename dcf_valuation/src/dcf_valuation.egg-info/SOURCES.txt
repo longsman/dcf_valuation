@@ -14,6 +14,8 @@ src/dcf_valuation/assets/bronze/fred.series_observations/ddl.sql
 src/dcf_valuation/assets/bronze/fred.series_observations/pipeline.yaml
 src/dcf_valuation/assets/bronze/massive.snapshot_all_tickers/ddl.sql
 src/dcf_valuation/assets/bronze/massive.snapshot_all_tickers/pipeline.yaml
+src/dcf_valuation/assets/bronze/sec.company_submissions/pipeline.yaml
+src/dcf_valuation/assets/bronze/sec.company_tickers/pipeline.yaml
 src/dcf_valuation/assets/gold/damodaran.implied_erp/ddl.sql
 src/dcf_valuation/assets/gold/damodaran.implied_erp/pipeline.yaml
 src/dcf_valuation/assets/gold/damodaran.industry_betas/ddl.sql
@@ -30,6 +32,7 @@ src/dcf_valuation/assets/gold/dim.sic_to_damodaran_industry/ddl.sql
 src/dcf_valuation/assets/gold/dim.sic_to_damodaran_industry/pipeline.yaml
 src/dcf_valuation/assets/gold/edgar.filing_events/ddl.sql
 src/dcf_valuation/assets/gold/edgar.filing_events/pipeline.yaml
+src/dcf_valuation/assets/gold/edgar.filing_events_backfill/pipeline.yaml
 src/dcf_valuation/assets/gold/financials.balance_quarterly/ddl.sql
 src/dcf_valuation/assets/gold/financials.balance_quarterly/pipeline.yaml
 src/dcf_valuation/assets/gold/financials.flow_quarterly/ddl.sql

@@ -1,0 +1,75 @@
+# bronze.sec.company_submissions
+# Fetches company submissions metadata from SEC API
+# Source: https://data.sec.gov/submissions/CIK{cik}.json
+# Strategy: INCREMENTAL - only fetch CIKs not already in target table
+# Initial load: ~13,000 API calls (~22 min at 10 req/sec)
+# Subsequent runs: Only new CIKs (fast)
+
+config:
+  mode: batch
+
+producer:
+  variant: ExecSQL
+  parameters:
+    sql_query: |
+      -- Only fetch CIKs that don't exist in target table yet (incremental)
+      SELECT DISTINCT t.cik
+      FROM bronze.sec.company_tickers t
+      LEFT ANTI JOIN bronze.sec.company_submissions s ON t.cik = s.cik
+
+operators:
+  - variant: RESTOperator
+    parameters:
+      url: https://data.sec.gov/submissions/CIK{cik}.json
+      method: GET
+      source_col: cik
+      param_name_for_value: cik
+      param_location: path
+      ignore_error_codes: [404]
+      headers:
+        User-Agent: "Datsando datsando@outlook.com"
+
+  - variant: Filter
+    parameters:
+      condition: content is not null
+
+  - variant: WithColumns
+    parameters:
+      cols_map:
+        # Parse key fields from JSON response
+        sic: get_json_object(content, '$.sic')
+        sic_description: get_json_object(content, '$.sicDescription')
+        entity_name: get_json_object(content, '$.name')
+        entity_type: get_json_object(content, '$.entityType')
+        tickers_json: get_json_object(content, '$.tickers')
+        exchanges_json: get_json_object(content, '$.exchanges')
+        fiscal_year_end: get_json_object(content, '$.fiscalYearEnd')
+        state_of_incorporation: get_json_object(content, '$.stateOfIncorporation')
+        category: get_json_object(content, '$.category')
+
+  - variant: WithColumns
+    parameters:
+      cols_map:
+        # Parse arrays
+        tickers: from_json(tickers_json, 'array<string>')
+        exchanges: from_json(exchanges_json, 'array<string>')
+
+  - variant: Select
+    parameters:
+      cols:
+        - cik
+        - sic
+        - sic_description
+        - entity_name
+        - entity_type
+        - tickers
+        - exchanges
+        - fiscal_year_end
+        - state_of_incorporation
+        - category
+
+consumer:
+  variant: MergeTable
+  parameters:
+    table: bronze.sec.company_submissions
+    key_columns: [cik]
