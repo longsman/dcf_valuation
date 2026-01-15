@@ -8,7 +8,7 @@ config:
 producer:
   variant: ReadCSV
   parameters:
-    path: $ASSET_PATH{pipeline_equities.assets, gold/seed/financials/tag_map.csv}
+    path: $ASSET_PATH{dcf_valuation.assets, gold/seed/financials/tag_map.csv}
     options:
       header: "true"
       inferSchema: "false"

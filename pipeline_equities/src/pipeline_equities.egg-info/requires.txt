@@ -1,7 +1,0 @@
-superwind
-feedparser>=6.0.11
-fire>=0.7.0
-keyring>=23.5.0
-pydantic>=2.10.6
-ratelimit>=2.2.1
-requests>=2.31.0

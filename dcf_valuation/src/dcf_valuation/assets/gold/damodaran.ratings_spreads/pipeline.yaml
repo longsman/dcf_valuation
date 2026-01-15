@@ -7,7 +7,7 @@ config:
 producer:
   variant: ReadCSV
   parameters:
-    path: $ASSET_PATH{pipeline_equities.assets, gold/seed/damodaran/ratings_spreads.csv}
+    path: $ASSET_PATH{dcf_valuation.assets, gold/seed/damodaran/ratings_spreads.csv}
     options:
       header: "true"
       inferSchema: "false"
