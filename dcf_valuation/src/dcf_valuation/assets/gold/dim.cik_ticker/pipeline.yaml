@@ -1,0 +1,34 @@
+# gold.dim.cik_ticker
+# Loads CIK to ticker mapping from SEC EDGAR company_tickers.json seed
+# Source: https://www.sec.gov/files/company_tickers.json
+
+config:
+  mode: batch
+
+producer:
+  variant: ReadCSV
+  parameters:
+    path: $ASSET_PATH{pipeline_equities.assets, gold/seed/dim/cik_ticker.csv}
+    options:
+      header: "true"
+      inferSchema: "false"
+
+operators:
+  - variant: WithColumns
+    parameters:
+      cols_map:
+        is_primary: cast(is_primary as boolean)
+
+  - variant: Select
+    parameters:
+      cols:
+        - cik
+        - ticker
+        - is_primary
+        # company_name intentionally excluded to match table schema
+
+consumer:
+  variant: MergeTable
+  parameters:
+    table: gold.dim.cik_ticker
+    key_columns: [cik, ticker]

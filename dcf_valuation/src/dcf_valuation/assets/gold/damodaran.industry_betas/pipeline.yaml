@@ -1,0 +1,42 @@
+# gold.damodaran.industry_betas
+# Loads Damodaran industry betas from seed CSV
+
+config:
+  mode: batch
+
+producer:
+  variant: ReadCSV
+  parameters:
+    path: $ASSET_PATH{pipeline_equities.assets, gold/seed/damodaran/industry_betas.csv}
+    options:
+      header: "true"
+      inferSchema: "false"
+
+operators:
+  - variant: WithColumns
+    parameters:
+      cols_map:
+        as_of_year: cast(as_of_year as int)
+        unlevered_beta: cast(unlevered_beta as double)
+        d_e_ratio: cast(d_e_ratio as double)
+        tax_rate: cast(tax_rate as double)
+        num_firms: cast(num_firms as int)
+        loaded_at: current_timestamp()
+
+  - variant: Select
+    parameters:
+      cols:
+        - as_of_year
+        - damodaran_industry
+        - unlevered_beta
+        - d_e_ratio
+        - tax_rate
+        - num_firms
+        - source_url
+        - loaded_at
+
+consumer:
+  variant: MergeTable
+  parameters:
+    table: gold.damodaran.industry_betas
+    key_columns: [as_of_year, damodaran_industry]

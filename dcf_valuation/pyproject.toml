@@ -1,0 +1,29 @@
+[project]
+name = "dcf_valuation"
+version = "0.1.1"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12.0,<3.13"
+dependencies = [
+    "superwind",
+    "feedparser>=6.0.11",
+    "fire>=0.7.0",
+    "keyring>=23.5.0",
+    "pydantic>=2.10.6",
+    "ratelimit>=2.2.1",
+    "requests>=2.31.0",
+]
+
+[tool.setuptools.package-data]
+'*' = ['assets/**/*']
+
+[tool.uv]
+package = true
+
+[tool.uv.sources]
+superwind = { path = "../superwind", editable = true }
+
+[dependency-groups]
+dev = [
+    "databricks-connect==16.4.*",
+]

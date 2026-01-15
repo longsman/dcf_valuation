@@ -1,0 +1,13 @@
+Metadata-Version: 2.4
+Name: dcf_valuation
+Version: 0.1.1
+Summary: Add your description here
+Requires-Python: <3.13,>=3.12.0
+Description-Content-Type: text/markdown
+Requires-Dist: superwind
+Requires-Dist: feedparser>=6.0.11
+Requires-Dist: fire>=0.7.0
+Requires-Dist: keyring>=23.5.0
+Requires-Dist: pydantic>=2.10.6
+Requires-Dist: ratelimit>=2.2.1
+Requires-Dist: requests>=2.31.0

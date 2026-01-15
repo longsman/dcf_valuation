@@ -1,0 +1,130 @@
+# gold.financials.flow_quarterly
+# Normalizes YTD flows into true quarterly values
+# Q1: direct, Q2/Q3: ytd_diff, Q4: fy_minus_ytd
+
+config:
+  mode: batch
+
+producer:
+  variant: ExecSQL
+  parameters:
+    sql_query: |
+      with flow_items as (
+        -- Get only flow line items from tag_map
+        select distinct line_item
+        from gold.financials.tag_map
+        where is_flow = true
+      ),
+      statement_flows as (
+        select
+          sl.cik,
+          sl.line_item,
+          sl.period_end as fiscal_quarter_end,
+          sl.fy,
+          sl.fp,
+          sl.val,
+          sl.accn as source_accn,
+          sl.filed as source_filed,
+          -- Determine period type based on fp
+          case
+            when sl.fp = 'Q1' then 'Q1'
+            when sl.fp = 'Q2' then 'Q2'
+            when sl.fp = 'Q3' then 'Q3'
+            when sl.fp in ('Q4', 'FY') then 'Q4'
+          end as fiscal_period,
+          sl.unit_of_measure
+        from gold.financials.statement_lines sl
+        inner join flow_items fi on sl.line_item = fi.line_item
+        where sl.unit_of_measure = 'USD'
+      ),
+      -- Get Q1 values (direct quarterly)
+      q1_values as (
+        select
+          cik, line_item, fiscal_quarter_end, fy, fp,
+          val as quarter_val,
+          'direct_q' as normalization_method,
+          'good' as normalization_quality,
+          source_accn, source_filed
+        from statement_flows
+        where fiscal_period = 'Q1'
+      ),
+      -- Get Q2 values (YTD minus Q1)
+      q2_values as (
+        select
+          q2.cik, q2.line_item, q2.fiscal_quarter_end, q2.fy, q2.fp,
+          coalesce(q2.val - q1.val, q2.val) as quarter_val,
+          case when q1.val is not null then 'ytd_diff' else 'direct_q' end as normalization_method,
+          case when q1.val is not null then 'good' else 'missing_prior_ytd' end as normalization_quality,
+          q2.source_accn, q2.source_filed
+        from statement_flows q2
+        left join statement_flows q1 
+          on q2.cik = q1.cik 
+          and q2.line_item = q1.line_item 
+          and q2.fy = q1.fy 
+          and q1.fiscal_period = 'Q1'
+        where q2.fiscal_period = 'Q2'
+      ),
+      -- Get Q3 values (YTD minus Q2 YTD)
+      q3_values as (
+        select
+          q3.cik, q3.line_item, q3.fiscal_quarter_end, q3.fy, q3.fp,
+          coalesce(q3.val - q2.val, q3.val) as quarter_val,
+          case when q2.val is not null then 'ytd_diff' else 'direct_q' end as normalization_method,
+          case when q2.val is not null then 'good' else 'missing_prior_ytd' end as normalization_quality,
+          q3.source_accn, q3.source_filed
+        from statement_flows q3
+        left join statement_flows q2 
+          on q3.cik = q2.cik 
+          and q3.line_item = q2.line_item 
+          and q3.fy = q2.fy 
+          and q2.fiscal_period = 'Q2'
+        where q3.fiscal_period = 'Q3'
+      ),
+      -- Get Q4 values (FY minus Q3 YTD)
+      q4_values as (
+        select
+          q4.cik, q4.line_item, q4.fiscal_quarter_end, q4.fy, 'Q4' as fp,
+          coalesce(q4.val - q3.val, q4.val) as quarter_val,
+          case when q3.val is not null then 'fy_minus_ytd' else 'direct_q' end as normalization_method,
+          case when q3.val is not null then 'good' else 'missing_prior_ytd' end as normalization_quality,
+          q4.source_accn, q4.source_filed
+        from statement_flows q4
+        left join statement_flows q3 
+          on q4.cik = q3.cik 
+          and q4.line_item = q3.line_item 
+          and q4.fy = q3.fy 
+          and q3.fiscal_period = 'Q3'
+        where q4.fiscal_period = 'Q4'
+      ),
+      -- Union all quarters then deduplicate
+      -- Multiple rows can occur from Q4/FY overlap or restated filings
+      all_quarters as (
+        select * from q1_values
+        union all
+        select * from q2_values
+        union all
+        select * from q3_values
+        union all
+        select * from q4_values
+      ),
+      -- Keep only the most recent filing per (cik, line_item, fiscal_quarter_end)
+      deduplicated as (
+        select *,
+          row_number() over (
+            partition by cik, line_item, fiscal_quarter_end
+            order by source_filed desc, source_accn desc
+          ) as rn
+        from all_quarters
+      )
+      select
+        cik, line_item, fiscal_quarter_end, fy, fp,
+        quarter_val, normalization_method, normalization_quality,
+        source_accn, source_filed
+      from deduplicated
+      where rn = 1
+
+consumer:
+  variant: MergeTable
+  parameters:
+    table: gold.financials.flow_quarterly
+    key_columns: [cik, line_item, fiscal_quarter_end]

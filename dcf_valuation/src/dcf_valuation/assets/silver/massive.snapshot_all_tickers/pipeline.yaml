@@ -1,0 +1,119 @@
+config:
+  mode: streaming
+  streaming_trigger_mode:
+    available_now: True
+  checkpoint_path: s3://datsando-prod/dcf_valuation/checkpoints/silver/massive/snapshot_all_tickers_v1
+
+producer:
+  variant: ReadTable
+  parameters:
+    table: bronze.massive.snapshot_all_tickers
+    options:
+      readChangeFeed: True
+      startingVersion: 5
+
+operators:
+  - variant: Filter
+    parameters:
+      condition: _change_type in ('insert', 'update_postimage')
+  - variant: WithColumns
+    parameters:
+      cols_map:
+        content: cast(content as string)
+  - variant: CastJSONString
+    parameters:
+      source_col: content
+      # We can't immediately cast nested JSON objects as structs due to the string format they're originally
+      # in from Bronze. These fields (day, lastQuote, etc.) are expressed as string representations of Python
+      # dictionaries, which is similar to, but not valid JSON. To compensate, 
+      # NOTE: lastQuote has multiple properties with the same name, but differing case. Spark is case-insensitive
+      # for column names, so we'll need to cast it as string and extract each field individually with aliases for
+      # repeated names.
+      # Actual type:
+      # lastQuote struct<P string, S string, p string, s string, t string>,
+      spark_schema: |
+        tickers array<
+          struct<
+            ticker string,
+            todaysChangePerc string,
+            todaysChange string,
+            updated string,
+            day struct<o string, h string, l string, c string, v string, vw string, otc string>,
+            lastQuote string,
+            lastTrade struct<c array<string>, i string, p string, s string, t string, x string>,
+            min struct<av string, c string, h string, l string, n string, o string, otc string, t string, v string, vw string>,
+            prevDay struct<c string, h string, l string, o string, otc string, v string, vw string>
+          >
+        >
+  - variant: Select
+    parameters:
+      cols:
+        - _id
+        - snapshot_date
+        - explode(content.tickers) as tickers
+  #- variant: Select
+  #  parameters:
+  #    cols:
+  #      - _id
+  #      - snapshot_date
+  #      - tickers.*
+  - variant: Select
+    parameters:
+      cols:
+        - _id
+        - tickers.ticker
+        - snapshot_date
+        - cast(tickers.todaysChangePerc as double) as todays_change_percent
+        - cast(tickers.todaysChange as double) as todays_change
+        - cast(tickers.updated/1000000000 as timestamp) as updated_ts
+        - struct(
+            cast(tickers.day.o as float) as open,
+            cast(tickers.day.h as float) as high,
+            cast(tickers.day.l as float) as low,
+            cast(tickers.day.c as float) as close,
+            cast(tickers.day.v as float) as volume,
+            cast(tickers.day.vw as float) as volume_weighted,
+            coalesce(cast(tickers.day.otc as boolean), FALSE) as otc
+          ) as day
+        - struct(
+            cast(get_json_object(tickers.lastQuote, '$.P') as float) as ask_price,
+            cast(get_json_object(tickers.lastQuote, '$.S') as int) as ask_size,
+            cast(get_json_object(tickers.lastQuote, '$.p') as float) as bid_price,
+            cast(get_json_object(tickers.lastQuote, '$.s') as int) as bid_size,
+            cast(cast(get_json_object(tickers.lastQuote, '$.t') as bigint)/1000000000 as timestamp) as ts
+          ) as last_quote
+        - struct(
+            tickers.lastTrade.c as conditions,
+            tickers.lastTrade.i as trade_id,
+            cast(tickers.lastTrade.p as float) as price,
+            cast(tickers.lastTrade.s as int) as size,
+            cast(tickers.lastTrade.t/1000000000 as timestamp) as ts,
+            cast(tickers.lastTrade.x as int) as exchange_id
+          ) as last_trade
+        - struct(
+            cast(tickers.min.av as float) as accumulated_volume,
+            cast(tickers.min.c as float) as close,
+            cast(tickers.min.h as float) as high,
+            cast(tickers.min.l as float) as low,
+            cast(tickers.min.n as int) as num_transactions,
+            cast(tickers.min.o as float) as open,
+            coalesce(cast(tickers.min.otc as boolean), FALSE) as otc,
+            cast(tickers.min.t/1000 as timestamp) as ts,
+            cast(tickers.min.v as float) as volume,
+            cast(tickers.min.vw as float) as volume_weighted
+          ) as min
+        - struct(
+            cast(tickers.prevDay.c as float) as close,
+            cast(tickers.prevDay.h as float) as high,
+            cast(tickers.prevDay.l as float) as low,
+            cast(tickers.prevDay.o as float) as open,
+            coalesce(cast(tickers.prevDay.otc as boolean), FALSE) as otc,
+            cast(tickers.prevDay.v as float) as volume,
+            cast(tickers.prevDay.vw as float) as volume_weighted
+          ) as previous_day
+
+consumer:
+  variant: MergeTable
+  parameters:
+    key_columns: [ticker, snapshot_date]
+    table: silver.massive.snapshot_all_tickers

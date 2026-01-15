@@ -1,12 +1,14 @@
-# Project State Notes (Databricks + Superwind + Pipeline Equities)
+# Project State Notes (Databricks + Superwind + DCF Valuation)
 
-Date: 2026-01-13
+Date: 2026-01-14
+
+> **Note:** The application bundle was renamed from `pipeline_equities` to `dcf_valuation` on 2026-01-14.
 
 This file is a “current state” snapshot of what exists in the repo *and* what exists in the live Databricks workspace. The goal is to ground future planning (a scalable Damodaran-style DCF pipeline) in reality: existing jobs, bundles, YAML pipelines, and Unity Catalog tables.
 
 Companion note:
 
-- `docs/PIPELINE_EQUITIES_TASK_MAP.md` (task → YAML asset → UC table/columns map)
+- `docs/DCF_VALUATION_TASK_MAP.md` (task → YAML asset → UC table/columns map)
 
 ## 1) Local Repo Layout (`dbricks/`)
 
@@ -76,38 +78,38 @@ Two bundle deployments exist under `/Workspace/Deployments`:
   - Delta table sinks (`MergeTable`, `SaveAsTable`) with `_id` + `_footprint` meta
   - **FRED** integration via a Spark DataSource named `fred_series_observations` (registered during pipeline execution)
 
-### 4.2 `pipeline_equities` bundle
+### 4.2 `dcf_valuation` bundle (formerly `pipeline_equities`)
 
-- Deployment path: `/Workspace/Deployments/pipeline_equities/prd`
+- Deployment path: `/Workspace/Deployments/dcf_valuation/prd`
 - Uses `superwind==0.2.1` as a dependency.
 - Bundle config (deployed `databricks.yaml`) indicates:
   - Artifacts built via `uv build`.
   - Job definitions in `resources/*.yaml`.
-  - “from_package” default: `pipeline_equities.assets`.
+  - "from_package" default: `dcf_valuation.assets`.
 
 The key design point:
 
-- `pipeline_equities` runs pipelines as **Python wheel tasks**, not notebook tasks.
+- `dcf_valuation` runs pipelines as **Python wheel tasks**, not notebook tasks.
 - Each task calls `superwind.cli.exec_superwind` and passes:
-  - `from_package=pipeline_equities.assets`
+  - `from_package=dcf_valuation.assets`
   - `yaml_file=<relative path inside assets>`
 
-This is the current “config-driven pipeline development” pattern at scale.
+This is the current "config-driven pipeline development" pattern at scale.
 
 ## 5) Jobs Inventory
 
 There are 6 jobs in the workspace:
 
-- `pipeline_equities` (job_id `542379385267532`) — scheduled UNPAUSED
+- `dcf_valuation` — scheduled UNPAUSED
 - `[dev lee_nathan_sh] edgar` (job_id `668955146306050`) — scheduled PAUSED
 - `[dev lee_nathan_sh] mtgjson-silver` (job_id `531478911629089`)
 - `[dev lee_nathan_sh] mtgjson-bronze` (job_id `161819182351307`)
 - `daily sp500 membership` (job_id `159380051435609`)
 - `superwind` (job_id `413747026668475`) — scheduled PAUSED
 
-### 5.1 `pipeline_equities` task graph
+### 5.1 `dcf_valuation` task graph
 
-Defined in `/Workspace/Deployments/pipeline_equities/prd/files/resources/pipeline_equities.job.yaml`:
+Defined in `/Workspace/Deployments/dcf_valuation/prd/files/resources/dcf_valuation.job.yaml`:
 
 - `bronze-edgar-form10_filings_rss` → `silver-edgar-form10_filings_rss`
 - `bronze-edgar-company_facts` (depends on silver form10)
@@ -120,7 +122,7 @@ Each task is a `python_wheel_task`:
 - `package_name: superwind`
 - `entry_point: exec_superwind`
 - `named_parameters:
-  - from_package: pipeline_equities.assets
+  - from_package: dcf_valuation.assets
   - yaml_file: <...>/pipeline.yaml`
 
 ### 5.2 `superwind` job
@@ -128,7 +130,7 @@ Each task is a `python_wheel_task`:
 - Uses a mix of:
   - Workspace notebooks under `/Workspace/Users/datsando@outlook.com/jobs/...`
   - Git-source notebooks: `notebooks/exec-superwind` with `yaml_file: ../pipelines/...`
-- This looks like an older/experimental execution mode compared to `pipeline_equities`.
+- This looks like an older/experimental execution mode compared to `dcf_valuation`.
 
 ## 6) Unity Catalog: Catalogs, Schemas, Tables
 

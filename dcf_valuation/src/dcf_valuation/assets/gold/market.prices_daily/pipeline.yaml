@@ -1,0 +1,88 @@
+# gold.market.prices_daily
+# Processes silver.massive.snapshot_all_tickers via CDF to create daily prices
+# Uses last_trade.price when available, else previous_day.close
+
+config:
+  mode: streaming
+  streaming_trigger_mode:
+    available_now: True
+  # Bumped from _v4 to _v5 to reset checkpoint after source table version mismatch
+  checkpoint_path: s3://datsando-prod/dcf_valuation/checkpoints/gold/market/prices_daily_v1
+
+producer:
+  variant: ReadTable
+  parameters:
+    table: silver.massive.snapshot_all_tickers
+    options:
+      readChangeFeed: True
+      # Use latest version - historical CDF files were vacuumed
+      startingVersion: $ENV{CDF_STARTING_VERSION:latest}
+
+operators:
+  - variant: Filter
+    parameters:
+      condition: _change_type in ('insert', 'update_postimage')
+
+  - variant: WithColumns
+    parameters:
+      cols_map:
+        # Convert last_trade.ts from UTC to NY time for price_date
+        last_trade_ts_ny: from_utc_timestamp(last_trade.ts, 'America/New_York')
+        last_trade_price: last_trade.price
+        prev_day_close: previous_day.close
+        source_snapshot_date: snapshot_date
+
+  - variant: WithColumns
+    parameters:
+      cols_map:
+        # Determine close price and method
+        close: |
+          case 
+            when last_trade_price is not null then last_trade_price
+            else prev_day_close
+          end
+        price_method: |
+          case 
+            when last_trade_price is not null then 'last_trade'
+            else 'previous_day_close'
+          end
+        # Determine price_date
+        # For last_trade: use the date from last_trade.ts
+        # For previous_day_close: use weekday heuristic (Mon -> -3 days, else -1 day)
+        price_date: |
+          case 
+            when last_trade_price is not null then to_date(last_trade_ts_ny)
+            when dayofweek(source_snapshot_date) = 2 then date_sub(source_snapshot_date, 3)
+            else date_sub(source_snapshot_date, 1)
+          end
+        last_trade_ts: |
+          case 
+            when last_trade_price is not null then last_trade.ts
+            else null
+          end
+        # v1: always weekday_heuristic until trading calendar is available
+        price_date_method: "'weekday_heuristic'"
+        source: "'massive'"
+
+  - variant: Filter
+    parameters:
+      condition: close is not null
+
+  - variant: Select
+    parameters:
+      cols:
+        - _id
+        - ticker
+        - price_date
+        - close
+        - price_method
+        - price_date_method
+        - last_trade_ts
+        - source
+        - source_snapshot_date
+
+consumer:
+  variant: MergeTable
+  parameters:
+    table: gold.market.prices_daily
+    key_columns: [ticker, price_date]
