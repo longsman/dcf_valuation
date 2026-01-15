@@ -324,6 +324,15 @@ operators:
             -- Initial growth (YoY revenue growth - simplified for v1)
             growth_initial_calc as growth_initial  -- YoY revenue growth, bounded [-20%, +50%]
           from with_spread ws
+        ),
+        -- Deduplicate before merge (multiple source rows can match same target key)
+        deduped as (
+          select f.*,
+            row_number() over (
+              partition by cik, valuation_date, source_accn
+              order by as_of_period_end desc nulls last
+            ) as _dedup_rn
+          from final f
         )
         select
           _id,
@@ -426,7 +435,8 @@ operators:
           )) as quality_flags,
           true as options_omitted,
           true as rsus_omitted
-        from final
+        from deduped
+        where _dedup_rn = 1
 
 consumer:
   variant: MergeTable
