@@ -2,11 +2,12 @@
 # Assembles all DCF inputs from filing events, financials, and Damodaran parameters
 
 config:
+  # Streaming mode (backfill completed 2026-01-15)
   mode: streaming
   streaming_defer_operators: True
   streaming_trigger_mode:
     available_now: True
-  checkpoint_path: s3://datsando-prod/dcf_valuation/checkpoints/gold/valuation/dcf_inputs_v2
+  checkpoint_path: s3://datsando-prod/dcf_valuation/checkpoints/gold/valuation/dcf_inputs_v3
 
 producer:
   variant: ReadTable
@@ -144,28 +145,39 @@ operators:
             where price_date >= current_date() - interval 7 days
           ) mp on ct.ticker = mp.ticker and mp.rn = 1
         ),
-        -- TODO 2: Get latest shares outstanding (with date boundary)
+        -- FIX: Get latest shares outstanding with PROPER date filter BEFORE ranking
+        -- Previous bug: ranked globally, then filtered by date = missed valid earlier shares
+        shares_candidates as (
+          select
+            wmp.cik,
+            wmp.as_of_period_end,
+            cf.val as shares_val,
+            cf.end as shares_date,
+            tm.priority,
+            row_number() over (
+              partition by wmp.cik, wmp.as_of_period_end
+              order by cf.end desc, tm.priority asc
+            ) as rn
+          from with_market_price wmp
+          inner join silver.edgar.company_facts cf
+            on wmp.cik = cf.cik
+            and cf.end <= wmp.as_of_period_end  -- Date filter BEFORE ranking!
+          inner join gold.financials.tag_map tm
+            on cf.taxonomy = tm.source_taxonomy
+            and cf.tag = tm.source_tag
+          where tm.line_item = 'shares_basic'
+            and cf.unit_of_measure = 'shares'
+            and cf.val > 0
+        ),
         with_shares as (
           select
             wmp.*,
-            sh.val as shares_basic_latest_lookup
+            sc.shares_val as shares_basic_latest_lookup
           from with_market_price wmp
-          left join (
-            select cf.cik, cf.val, cf.end as shares_date,
-              row_number() over (
-                partition by cf.cik 
-                order by cf.end desc, tm.priority asc
-              ) as rn
-            from silver.edgar.company_facts cf
-            inner join gold.financials.tag_map tm
-              on cf.taxonomy = tm.source_taxonomy
-              and cf.tag = tm.source_tag
-            where tm.line_item = 'shares_basic'
-              and cf.unit_of_measure = 'shares'
-              and cf.val > 0
-          ) sh on wmp.cik = sh.cik 
-            and sh.rn = 1
-            and sh.shares_date <= wmp.as_of_period_end  -- Prevent look-ahead bias
+          left join shares_candidates sc
+            on wmp.cik = sc.cik
+            and wmp.as_of_period_end = sc.as_of_period_end
+            and sc.rn = 1
         ),
         -- TODO 4: Calculate YoY revenue growth from company_facts (not flow_ttm)
         with_growth as (

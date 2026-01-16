@@ -10,14 +10,23 @@ producer:
   parameters:
     sql_query: |
       with filings as (
-        select distinct
+        select
           cik,
           accn,
           form,
-          filed
+          filed,
+          row_number() over (
+            partition by cik, accn
+            order by filed desc
+          ) as rn
         from silver.edgar.company_facts
         where form in ('10-Q', '10-K', '10-QT')
           and filed >= '2020-01-01'
+      ),
+      deduped as (
+        select cik, accn, form, filed
+        from filings
+        where rn = 1
       )
       select
         uuid() as _id,
@@ -28,7 +37,7 @@ producer:
         filed as filed_date,
         cast(null as string) as link,
         current_timestamp() as source_updated
-      from filings
+      from deduped
 
 consumer:
   variant: MergeTable

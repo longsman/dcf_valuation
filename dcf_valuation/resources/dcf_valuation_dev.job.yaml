@@ -226,7 +226,7 @@ resources:
         - <<: *task_defaults
           task_key: gold-valuation-dcf_inputs
           depends_on:
-            - task_key: gold-edgar-filing_events_backfill  # Changed: depend on backfill instead of streaming
+            - task_key: gold-edgar-filing_events  # Backfill already ran; streaming for incremental updates
             - task_key: gold-dim-company
             - task_key: gold-dim-sic_to_damodaran_industry
             - task_key: gold-financials-flow_ttm
