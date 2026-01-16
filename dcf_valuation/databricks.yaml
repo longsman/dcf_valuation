@@ -24,7 +24,7 @@ variables:
           client: '4'
           dependencies:
             - ./dist/*.whl
-            - /Workspace/Deployments/superwind/prd/artifacts/.internal/superwind-0.2.1-py3-none-any.whl
+            - /Workspace/Deployments/superwind/prd/artifacts/.internal/superwind-0.2.2-py3-none-any.whl
   from_package:
     default: dcf_valuation.assets
 

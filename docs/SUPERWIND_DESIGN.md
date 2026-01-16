@@ -31,7 +31,7 @@ Superwind itself is a lightweight dataflow framework:
 - YAML (workspace): `/Users/datsando@outlook.com/superwind/pipelines/...`
   - Polygon bronze: `/Users/datsando@outlook.com/superwind/pipelines/polygon/bronze.polygon.snapshot_all_tickers.yaml`
   - Polygon silver: `/Users/datsando@outlook.com/superwind/pipelines/polygon/silver.polygon.snapshot_all_tickers.yaml`
-- Superwind package (local repo): `superwind/src/superwind/...`
+- Superwind package (superwind repo): `superwind/src/superwind/...`
   - YAML loader: `superwind/src/superwind/definition/yaml.py`
   - Definitions & pipeline: `superwind/src/superwind/definition/__init__.py`
   - Producers: `superwind/src/superwind/producers/`

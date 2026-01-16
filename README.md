@@ -15,7 +15,7 @@ This `README.md` is intended to be the single “source of truth” for how the 
 
 Think of the system as two wheels + one job:
 
-- `superwind/` = the execution engine (framework wheel)
+- `superwind` = the execution engine (framework wheel)
 - `dcf_valuation/` = the project (pipelines + seeds + job definitions)
 - Databricks Job = calls Superwind to run each pipeline
 
@@ -62,9 +62,7 @@ Think of the system as two wheels + one job:
       assets/                 Pipeline YAML + DDL + seed CSVs
       extensions/             Project-specific Superwind components
 
-  superwind/                  Databricks bundle + framework wheel
-    databricks.yml            Bundle definition (dev/prd targets)
-    src/superwind/            Pipeline engine (registries, operators, consumers)
+  superwind (external)        Framework wheel (kept in a separate repo)
 
   scripts/                    Local exports (e.g., notebook runner)
   docs/                       Historical notes (superseded by this README)
@@ -181,12 +179,13 @@ Valuation outputs:
 ### 1) Set up Python env (recommended)
 
 ```bash
-# Framework
-cd superwind
+# Superwind (local dev)
+# This repo does NOT vendor superwind anymore. Keep a sibling clone at ../superwind.
+cd ../superwind
 uv sync --dev
 
 # Pipelines package
-cd ../dcf_valuation
+cd ../dbricks/dcf_valuation
 uv sync --dev
 ```
 
@@ -200,16 +199,15 @@ databricks auth profiles
 databricks current-user me -p DEFAULT -o json
 ```
 
-### 3) Deploy bundles
+### 3) Deploy bundle
 
-Deploy `superwind` first (engine), then `dcf_valuation` (pipelines/job).
+This repo deploys **only** `dcf_valuation`.
+
+It depends on a pre-built Superwind wheel already deployed in the workspace:
+- `/Workspace/Deployments/superwind/prd/artifacts/.internal/superwind-0.2.2-py3-none-any.whl`
 
 ```bash
-cd superwind
-databricks bundle validate --target dev
-databricks bundle deploy --target dev
-
-cd ../dcf_valuation
+cd dcf_valuation
 databricks bundle validate --target dev
 databricks bundle deploy --target dev
 ```

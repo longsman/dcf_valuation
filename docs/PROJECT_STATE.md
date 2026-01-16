@@ -14,7 +14,7 @@ Companion note:
 
 Top-level highlights:
 
-- `superwind/`: a cloned `superwind` repo (config-driven pipeline framework; Python package + Databricks Asset Bundle).
+- `superwind`: the pipeline execution engine (not vendored here; consumed as a deployed wheel in the Databricks workspace).
 - `docs/`: existing operational/design notes.
 - `data/`: local copies of YAML pipelines and exported job/run JSON from past investigations.
 - `scripts/nb_exec_superwind.py`: exported Databricks notebook runner (thin YAML runner).
@@ -70,7 +70,7 @@ Two bundle deployments exist under `/Workspace/Deployments`:
 ### 4.1 `superwind` bundle
 
 - Deployment path: `/Workspace/Deployments/superwind/prd`
-- Deployed version (pyproject): `superwind==0.2.1`
+- Deployed version (pyproject): `superwind==0.2.2`
 - Provides:
   - `exec_superwind` python wheel entry point (Fire CLI)
   - YAML loading with `$ENV{}`, `$VAR{}`, `$ASSET_PATH{}`, and `include:`
@@ -81,7 +81,7 @@ Two bundle deployments exist under `/Workspace/Deployments`:
 ### 4.2 `dcf_valuation` bundle (formerly `pipeline_equities`)
 
 - Deployment path: `/Workspace/Deployments/dcf_valuation/prd`
-- Uses `superwind==0.2.1` as a dependency.
+- Uses `superwind==0.2.2` as a dependency.
 - Bundle config (deployed `databricks.yaml`) indicates:
   - Artifacts built via `uv build`.
   - Job definitions in `resources/*.yaml`.
@@ -229,7 +229,7 @@ When using the `ExecSQL` operator in superwind pipeline YAML, SQL queries must r
       select * from __THIS__
 ```
 
-The `__THIS__` pattern may be familiar from other frameworks (dbt, etc.), but superwind creates a temp view named `data` by default. See `superwind/src/superwind/operators/transforms.py:226`.
+The `__THIS__` pattern may be familiar from other frameworks (dbt, etc.), but superwind creates a temp view named `data` by default (see `superwind/operators/transforms.py` in the superwind repo).
 
 **Historical failures (all fixed by changing `__THIS__` to `data`):**
 - `gold.financials.statement_lines` — 2026-01-14

@@ -119,7 +119,7 @@ Inspect deployed files:
 
 ### 5.2 Local workflow (recommended)
 
-From the bundle root directory (e.g. `pipeline_equities/` or `superwind/`):
+From the bundle root directory (e.g. `dcf_valuation/`):
 
 - `databricks bundle validate --target dev`
 - `databricks bundle deploy --target dev`
